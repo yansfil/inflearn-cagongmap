@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 카공맵 (cagongmap) — a service for finding laptop-work-friendly cafes on a map. Renders seed cafes from `data/cafes.json` as markers on a Kakao Map. Current stage is **map + markers only**; filters, list view, login, and UGC reporting are deferred (see `docs/scope.md`).
 
+## Repository layout convention
+
+`docs/` is for **documentation only** (Markdown: scope, specs, notes). Do **not** put executable artifacts there — SQL migrations belong in `supabase/migrations/`, seed/runtime data in `data/`. (Historically `schema.sql`/`seed.sql` lived in `docs/`; they've since moved to `supabase/migrations/`.)
+
 ## Commands
 
 Package manager is **npm** (`package-lock.json`).
@@ -17,6 +21,15 @@ Package manager is **npm** (`package-lock.json`).
 Note: in this environment `npm` may be shell-aliased to `pnpm`. If a `pnpm-lock.yaml` reappears after install, the alias hijacked the command — call the real npm by its absolute path instead.
 
 There is no test suite or configured linter beyond `next lint`.
+
+## Database (Supabase)
+
+A Supabase Postgres project backs the data layer. The `places` table (verified live cafes) is seeded from `data/cafes.json`.
+
+- **Migrations live in `supabase/migrations/`** — one `.sql` per migration, named `<version>_<snake_case>.sql`. File version prefixes are matched to what's actually applied on the remote (via `list_migrations`), so the CLI treats local and remote as the same state.
+- Current migrations: `…_create_places_schema.sql` (enums, `places` table, indexes, `updated_at` trigger, public-read RLS) and `…_seed_places.sql` (the 9 cafes).
+- The JSON→table mapping is non-obvious: `wifi: true → 'yes'`, and there is **no 카공 허용 column** (only laptop-friendly cafes are seeded, so every row would be true — see the Data schema caveat below).
+- When changing schema, add a **new** migration file rather than editing an applied one; keep `supabase/migrations/` as the single source of truth for DB state. Do not hand-write the file under `docs/`.
 
 ## Kakao Map key (required to see markers)
 
