@@ -1,3 +1,51 @@
+/* ── DESIGN.md 토큰 ──────────────────────────
+   색/여백/radius/그림자를 DESIGN.md frontmatter와 1:1로 둔다.
+   값을 바꾸기 전에 DESIGN.md를 먼저 확인할 것. */
+:root {
+  /* surface */
+  --surface: #fffaf8;
+  --surface-dim: #e4dad6;
+  --surface-bright: #fffdfb;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f9f2ef;
+  --surface-container: #f3eae7;
+  --surface-container-high: #ece0dd;
+  --surface-container-highest: #e4d7d3;
+  /* on-surface */
+  --on-surface: #211b1a;
+  --on-surface-variant: #5b504d;
+  --outline: #92817d;
+  --outline-variant: #e2d5d1;
+  /* brand */
+  --primary: #88484a;
+  --on-primary: #ffffff;
+  --primary-container: #e8c5c2;
+  --on-primary-container: #683638;
+  /* accents */
+  --pastel-mint: #d8f1ec;
+  --positive-text: #214f49;
+  --warm-cream: #fffef9;
+  --naver: #03c75a;
+  --kakao: #fee500;
+  /* radius */
+  --r-sm: 8px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-panel: 28px;
+  --r-full: 9999px;
+  /* spacing */
+  --s-xs: 4px;
+  --s-sm: 8px;
+  --s-md: 16px;
+  --s-lg: 24px;
+  --s-xl: 32px;
+  /* shadows */
+  --shadow-brew: 0 18px 42px -24px rgba(50, 37, 34, 0.34);
+  --shadow-marker: 0 10px 20px -13px rgba(35, 25, 25, 0.5);
+  --shadow-marker-selected: 0 0 0 7px rgba(136, 72, 74, 0.2),
+    0 15px 28px -14px rgba(35, 25, 25, 0.62);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,15 +56,16 @@ html,
 body {
   width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
-    "Malgun Gothic", sans-serif;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: var(--on-surface);
 }
 
 /* 지도 + 상세 패널 래퍼 (풀스크린) */
 .map-wrap {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -25,7 +74,9 @@ body {
   height: 100%;
 }
 
-/* ── 커스텀 마커 ───────────────────────────── */
+/* ── 커스텀 마커 ─────────────────────────────
+   DESIGN.md: 46px 원형, warm-cream 바탕, 선택 시에만 primary 강조.
+   모든 마커를 강한 색으로 칠하지 않는다. */
 .marker {
   cursor: pointer;
   transform: translateY(-2px);
@@ -33,13 +84,13 @@ body {
 
 /* 사진이 있는 장소: 원형 썸네일 */
 .marker--photo {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-full);
+  border: 3px solid var(--warm-cream);
+  box-shadow: var(--shadow-marker);
   overflow: hidden;
-  background: #eee;
+  background: var(--warm-cream);
 }
 
 .marker__img {
@@ -49,25 +100,39 @@ body {
   display: block;
 }
 
-/* 사진이 없는 장소: 기본 점 마커 */
+/* 사진이 없는 장소: 조용한 점 마커 (warm-cream, 강한 색 X) */
 .marker--pin {
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: #03c75a;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border-radius: var(--r-full);
+  background: var(--warm-cream);
+  border: 3px solid var(--outline-variant);
+  box-shadow: var(--shadow-marker);
 }
 
-/* ── 상세 패널 ─────────────────────────────── */
+/* 선택 상태: primary border + scale (DESIGN.md Interaction Rules) */
+.marker--selected.marker--photo {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-marker-selected);
+  transform: translateY(-2px) scale(1.08);
+}
+
+.marker--selected.marker--pin {
+  background: var(--primary);
+  border-color: var(--warm-cream);
+}
+
+/* ── 상세 패널 ───────────────────────────────
+   DESIGN.md detail-panel: surface 배경, radius 32px, 데스크탑 폭 400px. */
 .detail {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 360px;
-  height: 100%;
-  background: #fff;
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+  top: var(--s-md);
+  right: var(--s-md);
+  width: 400px;
+  max-height: calc(100dvh - var(--s-md) * 2);
+  background: var(--surface);
+  border-radius: 32px;
+  box-shadow: var(--shadow-brew);
   overflow-y: auto;
   z-index: 10;
   display: flex;
@@ -76,14 +141,14 @@ body {
 
 .detail__close {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   z-index: 1;
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
+  border-radius: var(--r-full);
+  background: rgba(33, 27, 26, 0.5);
   color: #fff;
   font-size: 15px;
   cursor: pointer;
@@ -94,7 +159,9 @@ body {
   position: relative;
   flex: none;
   overflow: hidden;
-  background: #f2f2f2;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+  background: var(--surface-container);
 }
 
 .detail__photos {
@@ -110,7 +177,7 @@ body {
 }
 
 .detail__photos:focus-visible {
-  outline: 2px solid #03c75a;
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 
@@ -136,16 +203,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f2f2f2;
-  color: #999;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
   font-size: 14px;
 }
 
 .detail__photo-controls {
   position: absolute;
   top: 50%;
-  left: 12px;
-  right: 12px;
+  left: var(--s-sm);
+  right: var(--s-sm);
   z-index: 1;
   display: flex;
   justify-content: space-between;
@@ -159,10 +226,10 @@ body {
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
+  border-radius: var(--r-full);
+  background: rgba(33, 27, 26, 0.62);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 20px rgba(33, 27, 26, 0.24);
   cursor: pointer;
   pointer-events: auto;
   backdrop-filter: blur(8px);
@@ -171,7 +238,7 @@ body {
 }
 
 .detail__photo-nav:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(33, 27, 26, 0.78);
 }
 
 .detail__photo-nav:active:not(:disabled) {
@@ -185,8 +252,8 @@ body {
 
 .detail__photo-count {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
+  right: var(--s-sm);
+  bottom: var(--s-sm);
   z-index: 1;
   min-width: 48px;
   height: 28px;
@@ -194,74 +261,164 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.58);
+  border-radius: var(--r-full);
+  background: rgba(33, 27, 26, 0.64);
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 850;
   line-height: 1;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(33, 27, 26, 0.2);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .detail__body {
-  padding: 16px 18px 24px;
-  line-height: 1.6;
-}
-
-.detail__name {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 4px;
+  padding: var(--s-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-sm);
 }
 
 .detail__address {
-  color: #666;
+  color: var(--on-surface-variant);
   font-size: 13px;
-  margin-bottom: 14px;
+  font-weight: 500;
+  line-height: 20px;
 }
 
-.detail__attrs {
+/* 상세 제목: 26px / 800 (DESIGN.md detail-title) */
+.detail__name {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 32px;
+  color: var(--on-surface);
+}
+
+/* 네이버 지도 보조 pill - 큰 CTA 금지, 초록은 N 글자에만 */
+.detail__naver {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-sm);
+  height: 36px;
+  padding: 0 14px;
+  margin-top: var(--s-xs);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-full);
+  color: var(--on-surface-variant);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detail__naver-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-sm);
+  background: var(--naver);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* eyebrow: QUICK CHECK / 자리와 분위기 */
+.detail__eyebrow {
+  margin-top: var(--s-md);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+/* Quick Check fact cards */
+.detail__facts {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-sm);
+}
+
+.fact {
+  display: flex;
+  align-items: center;
+  gap: var(--s-sm);
+  padding: 10px 12px;
+  background: var(--warm-cream);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+}
+
+.fact__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: var(--surface-container);
+  font-size: 16px;
+}
+
+/* positive 조건만 민트 + positive-text (DESIGN.md 핵심 규칙) */
+.fact--positive .fact__icon {
+  background: var(--pastel-mint);
+}
+
+.fact--positive .fact__value {
+  color: var(--positive-text);
+}
+
+.fact__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fact__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+}
+
+.fact__value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+/* 자리와 분위기 힌트 (work_fit chip) */
+.detail__hints {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: var(--s-sm);
 }
 
-.detail__attr {
-  background: #f0f4f1;
-  color: #2b6e45;
-  font-size: 12px;
-  padding: 4px 9px;
-  border-radius: 12px;
-}
-
-.detail__hours,
-.detail__price {
-  color: #444;
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-
-.detail__link {
-  display: inline-block;
-  margin-top: 12px;
-  color: #03c75a;
-  text-decoration: none;
-  font-weight: 600;
+.hint-chip {
+  padding: 6px 12px;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  border-radius: var(--r-full);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 /* 모바일: 하단 시트로 전환 */
 @media (max-width: 600px) {
   .detail {
     top: auto;
+    left: 0;
+    right: 0;
     bottom: 0;
     width: 100%;
-    height: 70%;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    max-height: 80dvh;
+    border-radius: var(--r-panel) var(--r-panel) 0 0;
   }
 
   .detail__gallery {
@@ -270,66 +427,48 @@ body {
 
   .detail__photos {
     height: 200px;
+    border-radius: 0;
   }
 
   .detail__photo {
     height: 100%;
   }
+
+  .detail__facts {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* 인포윈도우 내부 스타일 (카카오 인포윈도우 안에 들어갈 HTML) */
-.iw {
-  padding: 10px 12px;
-  min-width: 180px;
-  max-width: 240px;
-  line-height: 1.5;
-  font-size: 13px;
-}
-
-.iw__name {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.iw__attrs {
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.iw__hours {
-  color: #666;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-
-.iw__link {
-  display: inline-block;
-  color: #03c75a;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-/* 키 미설정 안내 배너 */
+/* 키 미설정 안내 화면 - surface 톤 유지 */
 .notice {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
-  padding: 24px;
+  background: var(--surface);
+  padding: var(--s-lg);
   text-align: center;
 }
 
 .notice__box {
   max-width: 440px;
   line-height: 1.7;
+  color: var(--on-surface-variant);
+}
+
+.notice__box h2 {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 28px;
+  color: var(--on-surface);
+  margin-bottom: var(--s-sm);
 }
 
 .notice code {
-  background: #eee;
+  background: var(--surface-container);
+  color: var(--on-surface);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   font-size: 13px;
 }

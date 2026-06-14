@@ -54,7 +54,23 @@ function loadKakaoSdk(appKey) {
 
 export default function KakaoMap({ cafes, appKey }) {
   const containerRef = useRef(null);
+  const markerElsRef = useRef([]);
+  const selectedRef = useRef(null);
   const [selected, setSelected] = useState(null);
+
+  // 선택된 카페 마커에만 marker--selected 토글
+  function applySelected(cafe) {
+    const id = cafe ? String(cafe.id ?? cafe.name) : null;
+    markerElsRef.current.forEach((el) => {
+      el.classList.toggle("marker--selected", el.dataset.cafeId === id);
+    });
+  }
+
+  // 선택 변경 시 마커 강조 갱신 (지도 재생성 없이)
+  useEffect(() => {
+    selectedRef.current = selected;
+    applySelected(selected);
+  }, [selected]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,13 +86,16 @@ export default function KakaoMap({ cafes, appKey }) {
         });
 
         const bounds = new kakao.maps.LatLngBounds();
+        const markerEls = [];
 
         cafes.forEach((cafe) => {
           const position = new kakao.maps.LatLng(cafe.lat, cafe.lng);
           bounds.extend(position);
 
           const content = buildMarkerContent(cafe);
+          content.dataset.cafeId = String(cafe.id ?? cafe.name);
           content.addEventListener("click", () => setSelected(cafe));
+          markerEls.push(content);
 
           const overlay = new kakao.maps.CustomOverlay({
             map,
@@ -87,6 +106,10 @@ export default function KakaoMap({ cafes, appKey }) {
           // (overlay 는 map 에 바로 표시됨)
           void overlay;
         });
+
+        // 선택 상태를 마커 엘리먼트에 반영 (DESIGN.md: 선택만 primary 강조)
+        markerElsRef.current = markerEls;
+        applySelected(selectedRef.current);
 
         // 지도 클릭(빈 곳) 시 상세 패널 닫기
         kakao.maps.event.addListener(map, "click", () => setSelected(null));

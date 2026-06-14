@@ -22,10 +22,31 @@ const NOISE_LABEL = {
   loud: "시끄러움",
 };
 
+// Quick Check fact card 한 칸.
+// positive=true 이면 pastel-mint 배경 + positive-text (좋은 조건 전용),
+// 그 외에는 neutral surface-container + primary 아이콘.
+function FactCard({ icon, label, value, positive = false }) {
+  return (
+    <li className={`fact${positive ? " fact--positive" : ""}`}>
+      <span className="fact__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="fact__text">
+        <span className="fact__label">{label}</span>
+        <span className="fact__value">{value}</span>
+      </span>
+    </li>
+  );
+}
+
 /**
  * 마커 클릭 시 열리는 상세 패널.
  * 데스크톱: 우측 사이드 패널 / 모바일: 하단 시트 (CSS 로 분기, globals.css 참고)
  * cafe 가 null 이면 닫힌 상태.
+ *
+ * 구성 순서(DESIGN.md Detail Panel):
+ *   Hero image → 주소 → 카페명 → 지도에서 보기(네이버 보조 pill)
+ *   → Quick Check → 자리/분위기 힌트(work_fit chip)
  */
 export default function PlaceDetail({ cafe, onClose }) {
   const placeId = cafe?.id ?? null;
@@ -38,13 +59,6 @@ export default function PlaceDetail({ cafe, onClose }) {
   }, [placeId]);
 
   if (!cafe) return null;
-
-  const attrs = [
-    `콘센트 ${OUTLET_LABEL[cafe.outlet] ?? cafe.outlet}`,
-    cafe.wifi ? "와이파이 있음" : "와이파이 없음",
-    WORK_FIT_LABEL[cafe.work_fit] ?? cafe.work_fit,
-    NOISE_LABEL[cafe.noise] ?? cafe.noise,
-  ];
 
   const hours = cafe.is_24h
     ? "24시간"
@@ -88,6 +102,44 @@ export default function PlaceDetail({ cafe, onClose }) {
     }
 
     setActivePhotoIndex(nextIndex);
+  }
+
+  // Quick Check: 콘센트 · 소음 · 와이파이 · 영업시간 · 아메리카노
+  // positive 판정은 "좋은 조건"일 때만 (DESIGN.md: 민트는 좋은 조건 전용)
+  const facts = [
+    {
+      icon: "🔌",
+      label: "콘센트",
+      value: OUTLET_LABEL[cafe.outlet] ?? cafe.outlet,
+      positive: cafe.outlet === "many",
+    },
+    {
+      icon: "🔉",
+      label: "소음",
+      value: NOISE_LABEL[cafe.noise] ?? cafe.noise,
+      positive: cafe.noise === "quiet",
+    },
+    {
+      icon: "📶",
+      label: "와이파이",
+      value: cafe.wifi ? "있음" : "없음",
+      positive: !!cafe.wifi,
+    },
+    {
+      icon: "🕐",
+      label: "영업시간",
+      value: hours,
+      positive: !!cafe.is_24h,
+    },
+  ];
+
+  if (typeof cafe.iced_americano_price === "number") {
+    facts.push({
+      icon: "🧋",
+      label: "아메리카노",
+      value: `${cafe.iced_americano_price.toLocaleString()}원`,
+      positive: false,
+    });
   }
 
   return (
@@ -154,37 +206,36 @@ export default function PlaceDetail({ cafe, onClose }) {
       </div>
 
       <div className="detail__body">
+        {cafe.address && <p className="detail__address">{cafe.address}</p>}
         <h2 className="detail__name">{cafe.name}</h2>
-        {cafe.address && (
-          <p className="detail__address">{cafe.address}</p>
-        )}
-
-        <ul className="detail__attrs">
-          {attrs.map((a) => (
-            <li key={a} className="detail__attr">
-              {a}
-            </li>
-          ))}
-        </ul>
-
-        <p className="detail__hours">영업시간 {hours}</p>
-
-        {typeof cafe.iced_americano_price === "number" && (
-          <p className="detail__price">
-            아이스 아메리카노 {cafe.iced_americano_price.toLocaleString()}원
-          </p>
-        )}
 
         {cafe.naver_place_url && (
           <a
-            className="detail__link"
+            className="detail__naver"
             href={cafe.naver_place_url}
             target="_blank"
             rel="noopener noreferrer"
           >
-            네이버에서 보기 →
+            <span className="detail__naver-mark" aria-hidden="true">
+              N
+            </span>
+            지도에서 보기
           </a>
         )}
+
+        <p className="detail__eyebrow">QUICK CHECK</p>
+        <ul className="detail__facts">
+          {facts.map((f) => (
+            <FactCard key={f.label} {...f} />
+          ))}
+        </ul>
+
+        <p className="detail__eyebrow">자리와 분위기</p>
+        <ul className="detail__hints">
+          <li className="hint-chip">
+            {WORK_FIT_LABEL[cafe.work_fit] ?? cafe.work_fit}
+          </li>
+        </ul>
       </div>
     </aside>
   );

@@ -47,3 +47,10 @@ Data label mapping (`outlet`/`work_fit`/`noise` code → Korean) lives in `Kakao
 ## Data schema caveat
 
 `data/cafes.json` (operator-seeded, ~9 cafes) does **not** match the schema in `docs/scope.md`. scope.md specifies 4-level `outlet`, 3-level `wifi`, and a **카공 허용 (welcome/allowed/tolerated/banned)** field that scope calls the most differentiating asset — but the actual JSON has simplified `outlet` (`many`/`some`), boolean `wifi`, and **no 카공 허용 field**. When extending data or filters, reconcile this gap rather than assuming scope.md reflects reality.
+
+## Design work
+
+Before changing any UI or CSS, **read `DESIGN.md` first**.
+
+- DESIGN.md's color, spacing, component, and tone (말투) standards take precedence.
+- If a change requires conflicting with those standards, **explain the reason first** before making it.
