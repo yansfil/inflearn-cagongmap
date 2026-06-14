@@ -54,3 +54,10 @@ Before changing any UI or CSS, **read `DESIGN.md` first**.
 
 - DESIGN.md's color, spacing, component, and tone (말투) standards take precedence.
 - If a change requires conflicting with those standards, **explain the reason first** before making it.
+
+## Git workflow
+
+For now, **feature development commits and pushes go directly to `main`** — do not create feature branches.
+
+- Commit each time a meaningful unit of work finishes (don't batch unrelated changes into one big commit).
+- After committing, push to `origin/main`.
