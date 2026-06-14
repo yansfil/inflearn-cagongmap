@@ -12,10 +12,269 @@ body {
     "Malgun Gothic", sans-serif;
 }
 
-/* 지도 풀스크린 */
-#map {
+/* 지도 + 상세 패널 래퍼 (풀스크린) */
+.map-wrap {
+  position: relative;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── 커스텀 마커 ───────────────────────────── */
+.marker {
+  cursor: pointer;
+  transform: translateY(-2px);
+}
+
+/* 사진이 있는 장소: 원형 썸네일 */
+.marker--photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  background: #eee;
+}
+
+.marker__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 사진이 없는 장소: 기본 점 마커 */
+.marker--pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #03c75a;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ── 상세 패널 ─────────────────────────────── */
+.detail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 360px;
+  height: 100%;
+  background: #fff;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+  overflow-y: auto;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.detail__gallery {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  background: #f2f2f2;
+}
+
+.detail__photos {
+  display: flex;
+  height: 220px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: inherit;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.detail__photos:focus-visible {
+  outline: 2px solid #03c75a;
+  outline-offset: -2px;
+}
+
+.detail__photos::-webkit-scrollbar {
+  display: none;
+}
+
+.detail__photo {
+  flex: 0 0 100%;
+  min-width: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.detail__photos-empty {
+  flex: 0 0 100%;
+  min-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f2;
+  color: #999;
+  font-size: 14px;
+}
+
+.detail__photo-controls {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.detail__photo-nav {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.detail__photo-nav:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.detail__photo-nav:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.detail__photo-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.detail__photo-count {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  min-width: 48px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.detail__body {
+  padding: 16px 18px 24px;
+  line-height: 1.6;
+}
+
+.detail__name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.detail__address {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.detail__attrs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.detail__attr {
+  background: #f0f4f1;
+  color: #2b6e45;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 12px;
+}
+
+.detail__hours,
+.detail__price {
+  color: #444;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.detail__link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #03c75a;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* 모바일: 하단 시트로 전환 */
+@media (max-width: 600px) {
+  .detail {
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: 70%;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .detail__gallery {
+    border-radius: 0;
+  }
+
+  .detail__photos {
+    height: 200px;
+  }
+
+  .detail__photo {
+    height: 100%;
+  }
 }
 
 /* 인포윈도우 내부 스타일 (카카오 인포윈도우 안에 들어갈 HTML) */

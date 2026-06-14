@@ -1,52 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import PlaceDetail from "./PlaceDetail";
 
-// 데이터의 코드값 → 한글 라벨 매핑
-const OUTLET_LABEL = {
-  many: "많음",
-  some: "보통",
-  few: "적음",
-  none: "없음",
-};
+// 마커용 커스텀 오버레이 HTML.
+// 대표 사진이 있으면 원형 썸네일, 없으면 기본 핀 느낌의 점 마커.
+function buildMarkerContent(cafe) {
+  const thumb = cafe.photos?.[0];
+  const wrap = document.createElement("div");
+  wrap.className = "marker";
+  wrap.title = cafe.name;
 
-const WORK_FIT_LABEL = {
-  good: "작업 좋음",
-  ok: "작업 무난",
-  bad: "작업 부적합",
-};
+  if (thumb) {
+    wrap.classList.add("marker--photo");
+    const img = document.createElement("img");
+    img.className = "marker__img";
+    img.src = thumb;
+    img.alt = cafe.name;
+    wrap.appendChild(img);
+  } else {
+    wrap.classList.add("marker--pin");
+  }
 
-const NOISE_LABEL = {
-  quiet: "조용함",
-  normal: "보통",
-  loud: "시끄러움",
-};
-
-// 인포윈도우에 들어갈 HTML 문자열 생성
-function buildInfoContent(cafe) {
-  const attrs = [
-    `콘센트 ${OUTLET_LABEL[cafe.outlet] ?? cafe.outlet}`,
-    cafe.wifi ? "와이파이 있음" : "와이파이 없음",
-    WORK_FIT_LABEL[cafe.work_fit] ?? cafe.work_fit,
-    NOISE_LABEL[cafe.noise] ?? cafe.noise,
-  ].join(" · ");
-
-  const hours = cafe.is_24h
-    ? "24시간"
-    : `${cafe.open_time} - ${cafe.close_time}`;
-
-  const link = cafe.naver_place_url
-    ? `<a class="iw__link" href="${cafe.naver_place_url}" target="_blank" rel="noopener noreferrer">네이버에서 보기 →</a>`
-    : "";
-
-  return `
-    <div class="iw">
-      <div class="iw__name">${cafe.name}</div>
-      <div class="iw__attrs">${attrs}</div>
-      <div class="iw__hours">영업시간 ${hours}</div>
-      ${link}
-    </div>
-  `;
+  return wrap;
 }
 
 // 카카오 SDK 스크립트를 한 번만 로드 (autoload=false 로 수동 init)
@@ -78,6 +54,7 @@ function loadKakaoSdk(appKey) {
 
 export default function KakaoMap({ cafes, appKey }) {
   const containerRef = useRef(null);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,24 +69,27 @@ export default function KakaoMap({ cafes, appKey }) {
           level: 6,
         });
 
-        // 한 번에 하나의 인포윈도우만 열리도록 공유
-        const infowindow = new kakao.maps.InfoWindow({ zIndex: 1 });
         const bounds = new kakao.maps.LatLngBounds();
 
         cafes.forEach((cafe) => {
           const position = new kakao.maps.LatLng(cafe.lat, cafe.lng);
           bounds.extend(position);
 
-          const marker = new kakao.maps.Marker({ map, position, title: cafe.name });
+          const content = buildMarkerContent(cafe);
+          content.addEventListener("click", () => setSelected(cafe));
 
-          kakao.maps.event.addListener(marker, "click", () => {
-            infowindow.setContent(buildInfoContent(cafe));
-            infowindow.open(map, marker);
+          const overlay = new kakao.maps.CustomOverlay({
+            map,
+            position,
+            content,
+            yAnchor: 1,
           });
+          // (overlay 는 map 에 바로 표시됨)
+          void overlay;
         });
 
-        // 지도 클릭 시 인포윈도우 닫기
-        kakao.maps.event.addListener(map, "click", () => infowindow.close());
+        // 지도 클릭(빈 곳) 시 상세 패널 닫기
+        kakao.maps.event.addListener(map, "click", () => setSelected(null));
 
         // 모든 마커가 한눈에 들어오도록 범위 맞춤
         if (cafes.length > 0) {
@@ -126,5 +106,10 @@ export default function KakaoMap({ cafes, appKey }) {
     };
   }, [cafes, appKey]);
 
-  return <div id="map" ref={containerRef} />;
+  return (
+    <div className="map-wrap">
+      <div id="map" ref={containerRef} />
+      <PlaceDetail cafe={selected} onClose={() => setSelected(null)} />
+    </div>
+  );
 }
