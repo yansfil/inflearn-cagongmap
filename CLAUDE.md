@@ -31,6 +31,32 @@ A Supabase Postgres project backs the data layer. The `places` table (verified l
 - The JSON→table mapping is non-obvious: `wifi: true → 'yes'`, and there is **no 카공 허용 column** (only laptop-friendly cafes are seeded, so every row would be true — see the Data schema caveat below).
 - When changing schema, add a **new** migration file rather than editing an applied one; keep `supabase/migrations/` as the single source of truth for DB state. Do not hand-write the file under `docs/`.
 
+### RLS (Row Level Security)
+
+When creating any table that holds **per-user data**, follow these rules:
+
+- **RLS is on by default.** Every user-data table starts with `alter table ... enable row level security;`. Do not ship a user-data table with RLS off.
+- **Ownership is `auth.uid() = user_id`.** If the table has a `user_id` column, policies must restrict access to the owner's own rows via `auth.uid() = user_id`.
+- **Design all four policies up front.** When adding a new table, write the `SELECT` / `INSERT` / `UPDATE` / `DELETE` policies it needs together in the same migration — don't add RLS-enable now and policies later.
+  - `SELECT` / `DELETE`: `using (auth.uid() = user_id)`.
+  - `INSERT`: `with check (auth.uid() = user_id)`.
+  - `UPDATE`: review **both** `using` and `with check` — `using` controls which rows can be updated, `with check` controls what the row may become. Default to `auth.uid() = user_id` for both so a user can neither edit others' rows nor reassign ownership away from themselves.
+- **RLS-enable and policies go in the same migration.** Before considering a migration done, verify it contains both the `enable row level security` statement *and* the policy SQL for that table. A migration with the table + RLS enabled but no policies (which silently denies all access) is a bug.
+
+```sql
+-- template for a per-user table
+alter table public.my_table enable row level security;
+
+create policy "select own" on public.my_table
+  for select using (auth.uid() = user_id);
+create policy "insert own" on public.my_table
+  for insert with check (auth.uid() = user_id);
+create policy "update own" on public.my_table
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "delete own" on public.my_table
+  for delete using (auth.uid() = user_id);
+```
+
 ## Kakao Map key (required to see markers)
 
 The app needs `NEXT_PUBLIC_KAKAO_MAP_KEY` (Kakao JavaScript key) in `.env.local`. Copy `.env.local.example` → `.env.local` and fill it. The Kakao app must register `http://localhost:3030` under Platform > Web, or the SDK fails to load. Without a real key, `app/page.js` short-circuits to a "키가 필요합니다" notice screen instead of the map — this is expected, not a bug.
