@@ -139,11 +139,18 @@ body {
   flex-direction: column;
 }
 
-.detail__close {
+/* 상세 우상단 액션 묶음 (북마크 하트 + 닫기) */
+.detail__actions {
   position: absolute;
   top: 14px;
   right: 14px;
   z-index: 1;
+  display: flex;
+  gap: var(--s-sm);
+}
+
+.detail__close,
+.detail__bookmark {
   width: 32px;
   height: 32px;
   border: none;
@@ -153,6 +160,19 @@ body {
   font-size: 15px;
   cursor: pointer;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 북마크 하트 — 평소 흰 외곽선 하트, 저장 시 primary 채움 */
+.detail__bookmark {
+  font-size: 17px;
+}
+
+.detail__bookmark--on {
+  background: var(--surface-container-lowest);
+  color: var(--primary);
 }
 
 .detail__gallery {
@@ -643,5 +663,179 @@ body {
 .auth__hint {
   font-size: 12px;
   line-height: 16px;
+  color: var(--on-surface-variant);
+}
+
+/* ── 북마크 패널 (좌측, 로그인 후) ───────────
+   DESIGN.md Bookmark Panel: 로그인 후에만 노출, 반투명 흰 표면,
+   둥근 카드 안에 또 카드 만들지 않게 항목은 가볍게 둔다. */
+.bookmark-panel {
+  margin-top: var(--s-md);
+  padding: var(--s-md);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--outline-variant);
+  border-radius: 20px;
+}
+
+.bookmark-panel__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.bookmark-panel__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-sm);
+  margin-top: var(--s-xs);
+}
+
+.bookmark-panel__title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 28px;
+  color: var(--on-surface);
+}
+
+.bookmark-panel__count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+}
+
+.bookmark-panel__empty {
+  margin-top: var(--s-sm);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--on-surface-variant);
+}
+
+.bookmark-panel__list {
+  list-style: none;
+  margin-top: var(--s-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xs);
+  max-height: 38dvh;
+  overflow-y: auto;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-sm);
+  width: 100%;
+  padding: 6px;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.bookmark-item:hover {
+  background: var(--surface-container-low);
+}
+
+.bookmark-item__thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-container);
+}
+
+.bookmark-item__thumb--empty {
+  display: block;
+}
+
+.bookmark-item__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bookmark-item__name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookmark-item__addr {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 로그인 안내 모달 ────────────────────────
+   비로그인 사용자가 북마크를 누르면 뜬다. */
+.login-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-lg);
+  background: rgba(33, 27, 26, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.login-modal__box {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: var(--s-xl) var(--s-lg) var(--s-lg);
+  box-shadow: var(--shadow-brew);
+  text-align: center;
+}
+
+.login-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.login-modal__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.login-modal__title {
+  margin-top: var(--s-xs);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 26px;
+  color: var(--on-surface);
+}
+
+.login-modal__desc {
+  margin: var(--s-sm) 0 var(--s-lg);
+  font-size: 14px;
+  line-height: 20px;
   color: var(--on-surface-variant);
 }

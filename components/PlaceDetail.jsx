@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAppState } from "./AppStateProvider";
 
 // 데이터의 코드값 → 한글 라벨 매핑 (KakaoMap 과 동일 규약)
 const OUTLET_LABEL = {
@@ -49,6 +50,8 @@ function FactCard({ icon, label, value, positive = false }) {
  *   → Quick Check → 자리/분위기 힌트(work_fit chip)
  */
 export default function PlaceDetail({ cafe, onClose }) {
+  const { isBookmarked, toggleBookmark } = useAppState();
+
   const placeId = cafe?.id ?? null;
   const photoTrackRef = useRef(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -59,6 +62,8 @@ export default function PlaceDetail({ cafe, onClose }) {
   }, [placeId]);
 
   if (!cafe) return null;
+
+  const bookmarked = isBookmarked(cafe.id);
 
   const hours = cafe.is_24h
     ? "24시간"
@@ -144,9 +149,23 @@ export default function PlaceDetail({ cafe, onClose }) {
 
   return (
     <aside className="detail" role="dialog" aria-label={`${cafe.name} 상세`}>
-      <button className="detail__close" onClick={onClose} aria-label="닫기">
-        ✕
-      </button>
+      <div className="detail__actions">
+        <button
+          type="button"
+          className={`detail__bookmark${
+            bookmarked ? " detail__bookmark--on" : ""
+          }`}
+          onClick={() => toggleBookmark(cafe.id)}
+          aria-pressed={bookmarked}
+          aria-label={bookmarked ? "북마크 해제" : "북마크"}
+          title={bookmarked ? "북마크 해제" : "북마크"}
+        >
+          {bookmarked ? "♥" : "♡"}
+        </button>
+        <button className="detail__close" onClick={onClose} aria-label="닫기">
+          ✕
+        </button>
+      </div>
 
       <div className="detail__gallery">
         <div

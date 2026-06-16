@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getSupabaseBrowser } from "../lib/supabaseBrowser";
+import { useAppState } from "./AppStateProvider";
 
 // 카카오 user_metadata 에서 표시용 이름/이메일/아바타를 뽑는다.
 // (provider 별 키가 다를 수 있어 흔한 키들을 순서대로 본다)
@@ -15,31 +14,7 @@ function readProfile(user) {
 }
 
 export default function KakaoLogin() {
-  const supabase = getSupabaseBrowser();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
-    // 초기 세션 확인 (implicit redirect 직후 URL 토큰도 여기서 반영됨)
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    // 로그인/로그아웃 등 세션 변화 구독
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  const { supabase, user, authReady } = useAppState();
 
   async function handleLogin() {
     if (!supabase) return;
@@ -66,7 +41,7 @@ export default function KakaoLogin() {
     );
   }
 
-  if (loading) {
+  if (!authReady) {
     return <div className="auth__skeleton" aria-hidden="true" />;
   }
 
@@ -84,9 +59,7 @@ export default function KakaoLogin() {
         )}
         <div className="auth-user__meta">
           <span className="auth-user__name">{name}</span>
-          {email ? (
-            <span className="auth-user__email">{email}</span>
-          ) : null}
+          {email ? <span className="auth-user__email">{email}</span> : null}
         </div>
         <button
           type="button"

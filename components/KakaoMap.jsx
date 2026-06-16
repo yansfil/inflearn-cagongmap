@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import PlaceDetail from "./PlaceDetail";
 import KakaoLogin from "./KakaoLogin";
+import BookmarkList from "./BookmarkList";
+import LoginPrompt from "./LoginPrompt";
+import { AppStateProvider } from "./AppStateProvider";
 
 // 마커용 커스텀 오버레이 HTML.
 // 대표 사진이 있으면 원형 썸네일, 없으면 기본 핀 느낌의 점 마커.
@@ -131,23 +134,29 @@ export default function KakaoMap({ cafes, appKey }) {
   }, [cafes, appKey]);
 
   return (
-    <div className="map-wrap">
-      <div id="map" ref={containerRef} />
+    <AppStateProvider>
+      <div className="map-wrap">
+        <div id="map" ref={containerRef} />
 
-      {/* 좌측 패널: 지도 탐색을 시작하고 개인 상태로 들어가는 entrance.
-          DESIGN.md Left Panel — 브랜드 + 로그인 (검색/북마크는 추후) */}
-      <aside className="left-panel">
-        <p className="left-panel__eyebrow">WORK CAFE MAP</p>
-        <h1 className="left-panel__title">카공맵</h1>
-        <p className="left-panel__sub">
-          오래 앉아 작업하기 좋은 카페 {cafes.length}곳
-        </p>
-        <div className="left-panel__auth">
-          <KakaoLogin />
-        </div>
-      </aside>
+        {/* 좌측 패널: 지도 탐색을 시작하고 개인 상태로 들어가는 entrance.
+            DESIGN.md Left Panel — 브랜드 + 로그인 + 북마크 */}
+        <aside className="left-panel">
+          <p className="left-panel__eyebrow">WORK CAFE MAP</p>
+          <h1 className="left-panel__title">카공맵</h1>
+          <p className="left-panel__sub">
+            오래 앉아 작업하기 좋은 카페 {cafes.length}곳
+          </p>
+          <div className="left-panel__auth">
+            <KakaoLogin />
+          </div>
+          <BookmarkList cafes={cafes} onSelect={setSelected} />
+        </aside>
 
-      <PlaceDetail cafe={selected} onClose={() => setSelected(null)} />
-    </div>
+        <PlaceDetail cafe={selected} onClose={() => setSelected(null)} />
+
+        {/* 비로그인 사용자가 북마크를 누르면 뜨는 로그인 안내 모달 */}
+        <LoginPrompt />
+      </div>
+    </AppStateProvider>
   );
 }
