@@ -472,3 +472,176 @@ body {
   border-radius: var(--r-sm);
   font-size: 13px;
 }
+
+/* ── 좌측 패널 ───────────────────────────────
+   DESIGN.md Left Panel: 데스크탑 390px, 좌상단 16px 오프셋,
+   28px radius, 반투명 surface + 약한 그림자. 지도와 경쟁하지 않게 조용히 띄운다. */
+.left-panel {
+  position: absolute;
+  top: var(--s-md);
+  left: var(--s-md);
+  width: 390px;
+  max-width: calc(100vw - var(--s-md) * 2);
+  background: rgba(255, 250, 248, 0.95);
+  backdrop-filter: blur(6px);
+  border-radius: var(--r-panel);
+  padding: 20px;
+  box-shadow: var(--shadow-brew);
+  z-index: 10;
+}
+
+.left-panel__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.left-panel__title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 36px;
+  color: var(--on-surface);
+  margin-top: var(--s-xs);
+}
+
+.left-panel__sub {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--on-surface-variant);
+  margin-top: var(--s-xs);
+}
+
+.left-panel__auth {
+  margin-top: var(--s-md);
+}
+
+/* ── 카카오 로그인 버튼 ──────────────────────
+   DESIGN.md: 로그인 전 유일하게 큰 색이 들어가는 버튼.
+   카카오 공식 노란색, pill, 48px, 외곽 장식 최소화. */
+.kakao-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-sm);
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--s-md);
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--kakao);
+  color: rgba(0, 0, 0, 0.85);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.kakao-login:hover {
+  filter: brightness(0.96);
+}
+
+.kakao-login__icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── 로그인 사용자 정보 ──────────────────────
+   DESIGN.md: avatar, 이름, 이메일, 로그아웃만. 큰 색·카드 중첩 금지. */
+.auth-user {
+  display: flex;
+  align-items: center;
+  gap: var(--s-sm);
+  min-height: 48px;
+}
+
+.auth-user__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-container);
+}
+
+.auth-user__avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.auth-user__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.auth-user__name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-user__email {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-user__logout {
+  flex-shrink: 0;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  border-radius: var(--r-full);
+  height: 32px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.auth-user__logout:hover {
+  background: var(--surface-container);
+}
+
+/* 로그인 영역 로딩/안내 */
+.auth__skeleton {
+  height: 48px;
+  border-radius: var(--r-full);
+  background: var(--surface-container);
+  animation: auth-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes auth-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.auth__hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--on-surface-variant);
+}
