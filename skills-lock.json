@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "clarify": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "6ebb717891d950683e674ca1207fb2c9d022a821d8272e7605a6634139845f3a"
+    },
+    "implement": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "0a5c77c09baeb58f2bc145c7f0412ff7f91d75c82e9ce961b1f60f9a719f7724"
+    },
+    "learn": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "8e7e24e2171d6cf50ccc6299c26bfd3aaa816de32fa46e9e7b17f7bb40b53a49"
+    },
+    "pr": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "cbeea40286eca16a95c72c84edbafd5c0b65e7c73e690b521056a6290d2cc01f"
+    },
+    "prd": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "04a96a31300072c73e747e8e95b3d668ca884271286a5a6cd3e69eee99bbc402"
+    },
+    "verify": {
+      "source": "yansfil/vibe-engineering",
+      "sourceType": "github",
+      "computedHash": "da512a182fabe666bec3ddb1984ff3dc535463a6317bb615e7c855245f97251b"
+    }
+  }
+}

@@ -81,6 +81,10 @@ Before changing any UI or CSS, **read `DESIGN.md` first**.
 - DESIGN.md's color, spacing, component, and tone (말투) standards take precedence.
 - If a change requires conflicting with those standards, **explain the reason first** before making it.
 
+## Browser verification
+
+For browser-based verification (UI smoke tests, checking that a change works in the real app), use **playwright-cli**. It's installed globally and its skill is connected at `.claude/skills/playwright-cli/`.
+
 ## Git workflow
 
 For now, **feature development commits and pushes go directly to `main`** — do not create feature branches.
