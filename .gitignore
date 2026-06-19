@@ -12,3 +12,6 @@
 # misc
 .DS_Store
 *.log
+
+# playwright-cli runtime artifacts (snapshots, console logs)
+/.playwright-cli
