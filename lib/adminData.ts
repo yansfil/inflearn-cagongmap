@@ -1,5 +1,6 @@
 import "server-only";
 
+import { requireAdmin } from "./admin";
 import { getSupabaseAdmin } from "./supabaseAdmin";
 import type { PlaceRow } from "./types";
 
@@ -8,6 +9,9 @@ const PLACE_COLUMNS =
 
 /** 관리자 장소 목록 (전체, 이름순). */
 export async function listPlaces(): Promise<PlaceRow[]> {
+  // service_role(RLS 우회) 데이터 접근은 레이아웃 가드에만 의존하지 않고
+  // 접근 지점에서 직접 관리자 재검증한다.
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("places")
@@ -19,6 +23,7 @@ export async function listPlaces(): Promise<PlaceRow[]> {
 
 /** 단일 장소 (수정 폼용). 없으면 null. */
 export async function getPlace(id: string): Promise<PlaceRow | null> {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("places")

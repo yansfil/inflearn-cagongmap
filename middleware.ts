@@ -44,7 +44,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // 정적 자산·이미지 최적화 경로는 제외하고 모든 요청에서 세션을 갱신한다.
+  // auth/callback 은 제외한다: 그 라우트가 code 교환으로 세션 쿠키를 직접 심는데,
+  // 미들웨어의 세션 갱신 쿠키와 경합하면 방금 만든 세션이 드롭될 수 있다.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

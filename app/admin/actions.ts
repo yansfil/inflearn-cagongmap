@@ -7,9 +7,9 @@ import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
 import { parsePlaceForm } from "../../lib/adminPlaces";
 import {
   UPLOAD_BUCKET,
-  ALLOWED_IMAGE_TYPES,
-  MAX_FILE_SIZE,
-  MAX_FILES,
+  UploadError,
+  validateFiles,
+  uploadFilesToPrefix,
 } from "../../lib/uploads";
 
 /**
@@ -54,11 +54,19 @@ export async function createPlaceAction(
   }
 
   // 제보에서 넘어온 경우: 해당 제보를 approved 로 (저장 성공 시점에만).
+  // 이 UPDATE 가 실패하면 place 는 생겼는데 제보는 pending 으로 남아 재승인 시
+  // 장소가 중복 생성될 수 있으므로, 실패를 삼키지 않고 관리자에게 알린다.
   if (submissionId) {
-    await supabase
+    const { error: subErr } = await supabase
       .from("place_submissions")
       .update({ status: "approved" })
       .eq("id", submissionId);
+    if (subErr) {
+      return {
+        ok: false,
+        error: `장소는 추가됐지만 제보 승인 처리에 실패했습니다(중복 승인 주의): ${subErr.message}`,
+      };
+    }
     // 제보 목록 캐시를 무효화해 돌아왔을 때 승인 상태가 반영되게 한다.
     revalidatePath("/admin/reports");
   }
@@ -89,11 +97,17 @@ export async function updatePlaceAction(
   const supabase = getSupabaseAdmin();
 
   // 삭제/교체된 관리자 사진 정리를 위해 기존 photos 를 먼저 읽는다.
-  const { data: existing } = await supabase
+  // 이 읽기가 실패하면 cleanup 이 빈 배열을 받아 지운 사진의 스토리지 객체가
+  // 고아로 남으므로, 실패 시 수정 자체를 진행하지 않고 중단한다.
+  const { data: existing, error: readErr } = await supabase
     .from("places")
     .select("photos")
     .eq("id", id)
     .maybeSingle();
+
+  if (readErr) {
+    return { ok: false, error: `기존 장소 조회 실패: ${readErr.message}` };
+  }
 
   const { error } = await supabase
     .from("places")
@@ -111,10 +125,16 @@ export async function updatePlaceAction(
   );
 
   if (editRequestId) {
-    await supabase
+    const { error: reqErr } = await supabase
       .from("place_edit_requests")
       .update({ status: "approved" })
       .eq("id", editRequestId);
+    if (reqErr) {
+      return {
+        ok: false,
+        error: `장소는 수정됐지만 수정 요청 승인 처리에 실패했습니다: ${reqErr.message}`,
+      };
+    }
     revalidatePath("/admin/reports");
   }
 
@@ -192,21 +212,13 @@ export async function rejectEditRequestAction(
   return { ok: true };
 }
 
-/** 파일명에서 경로에 안전한 이름만 남긴다. */
-function safeName(name: string): string {
-  const dot = name.lastIndexOf(".");
-  const ext =
-    dot >= 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
-  const rand = Math.random().toString(36).slice(2, 8);
-  return ext ? `${Date.now()}-${rand}.${ext}` : `${Date.now()}-${rand}`;
-}
-
 /**
  * 관리자 장소 사진 업로드.
  *
- * service_role 로 place-images 버킷의 places/ 경로에 올린다(개인 uploads/{uid}/
- * 경로 제약과 무관). public 버킷이라 반환 URL 을 places.photos 에 그대로 담는다.
- * 검증(이미지 MIME, 파일당 10MB, 장수 상한)은 lib/uploads 규칙을 재사용한다.
+ * service_role 로 place-images 버킷의 places/{uuid}/ 경로에 올린다(개인
+ * uploads/{uid}/ 경로 제약과 무관). public 버킷이라 반환 URL 을 places.photos 에
+ * 그대로 담는다. 검증(MIME/용량/장수)·업로드·부분 실패 정리는 lib/uploads 의
+ * validateFiles / uploadFilesToPrefix 를 재사용한다(사용자 업로드와 동일 규칙).
  */
 export async function uploadAdminPhotosAction(
   form: FormData
@@ -215,38 +227,21 @@ export async function uploadAdminPhotosAction(
 
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   if (files.length === 0) return { ok: false, error: "선택된 파일이 없습니다." };
-  if (files.length > MAX_FILES) {
-    return { ok: false, error: `사진은 최대 ${MAX_FILES}장까지 올릴 수 있습니다.` };
-  }
-  for (const f of files) {
-    if (!ALLOWED_IMAGE_TYPES.includes(f.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
-      return { ok: false, error: "이미지 파일(jpg, png, webp, gif)만 올릴 수 있습니다." };
-    }
-    if (f.size > MAX_FILE_SIZE) {
-      return { ok: false, error: "사진 한 장은 10MB 이하만 올릴 수 있습니다." };
-    }
-  }
 
   const supabase = getSupabaseAdmin();
-  const urls: string[] = [];
-  const uploadedPaths: string[] = [];
-
-  for (const file of files) {
-    const path = `places/${crypto.randomUUID()}/${safeName(file.name)}`;
-    const { error } = await supabase.storage
-      .from(UPLOAD_BUCKET)
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (error) {
-      // 부분 업로드 정리
-      if (uploadedPaths.length > 0) {
-        await supabase.storage.from(UPLOAD_BUCKET).remove(uploadedPaths);
-      }
-      return { ok: false, error: `사진 업로드 실패: ${error.message}` };
-    }
-    uploadedPaths.push(path);
-    const { data } = supabase.storage.from(UPLOAD_BUCKET).getPublicUrl(path);
-    urls.push(data.publicUrl);
+  try {
+    validateFiles(files);
+    const uploaded = await uploadFilesToPrefix(
+      supabase,
+      `places/${crypto.randomUUID()}`,
+      files
+    );
+    return { ok: true, urls: uploaded.map((u) => u.url) };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof UploadError ? e.message : `사진 업로드 실패: ${(e as Error).message}`,
+    };
   }
-
-  return { ok: true, urls };
 }

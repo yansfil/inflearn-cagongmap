@@ -47,9 +47,14 @@ describe("parsePhotos", () => {
       .toEqual(["a.jpg", "b.jpg"]);
   });
 
-  it("빈 값이나 깨진 JSON은 빈 배열로 정규화한다", () => {
+  it("빈 문자열은 사진 없음([])으로 본다", () => {
     expect(parsePhotos("")).toEqual([]);
-    expect(parsePhotos("{")).toEqual([]);
+    expect(parsePhotos("   ")).toEqual([]);
+  });
+
+  it("깨진 JSON·비배열은 던져서 '사진 없음' 오해로 전체 삭제되는 걸 막는다", () => {
+    expect(() => parsePhotos("{")).toThrow(PlaceFormError);
+    expect(() => parsePhotos('"a.jpg"')).toThrow(PlaceFormError);
   });
 });
 
@@ -80,6 +85,25 @@ describe("parsePlaceForm", () => {
     expect(() => parsePlaceForm(makeForm({ name: "" }))).toThrow(PlaceFormError);
     expect(() => parsePlaceForm(makeForm({ lat: "abc" }))).toThrow(
       "좌표(lat/lng)는 숫자여야 합니다."
+    );
+  });
+
+  it("빈 좌표는 0으로 통과시키지 않고 필수로 거른다", () => {
+    // Number("")===0 이 검증을 통과해 (0,0)에 저장되던 버그 방지
+    expect(() => parsePlaceForm(makeForm({ lat: "" }))).toThrow(
+      "좌표(lat/lng)는 필수입니다."
+    );
+    expect(() => parsePlaceForm(makeForm({ lng: "" }))).toThrow(
+      "좌표(lat/lng)는 필수입니다."
+    );
+  });
+
+  it("좌표 범위를 벗어나면 거부한다", () => {
+    expect(() => parsePlaceForm(makeForm({ lat: "91" }))).toThrow(
+      "좌표 범위가 올바르지 않습니다"
+    );
+    expect(() => parsePlaceForm(makeForm({ lng: "181" }))).toThrow(
+      "좌표 범위가 올바르지 않습니다"
     );
   });
 

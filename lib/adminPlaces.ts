@@ -72,19 +72,28 @@ export function parseTags(raw: string): string[] {
     .filter((t) => t.length > 0);
 }
 
-/** photos 는 hidden 필드에 JSON 문자열(URL 배열)로 담아 넘긴다. */
+/**
+ * photos 는 hidden 필드에 JSON 문자열(URL 배열)로 담아 넘긴다.
+ *
+ * 주의: 파싱 실패를 조용히 [] 로 삼키면 직렬화가 깨졌을 때 "사진 없음"으로
+ * 해석돼 그 장소의 모든 사진이 삭제될 수 있다. 그래서 잘못된 JSON 은
+ * PlaceFormError 를 던져 저장을 막는다. (빈 문자열은 정상적인 "사진 없음".)
+ */
 export function parsePhotos(raw: string): string[] {
   if (!raw.trim()) return [];
+  let arr: unknown;
   try {
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .filter((u): u is string => typeof u === "string")
-      .map((u) => u.trim())
-      .filter((u) => u.length > 0);
+    arr = JSON.parse(raw);
   } catch {
-    return [];
+    throw new PlaceFormError("사진 데이터 형식이 올바르지 않습니다.");
   }
+  if (!Array.isArray(arr)) {
+    throw new PlaceFormError("사진 데이터 형식이 올바르지 않습니다.");
+  }
+  return arr
+    .filter((u): u is string => typeof u === "string")
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0);
 }
 
 export function parsePlaceForm(form: FormData): PlacePayload {
@@ -93,10 +102,19 @@ export function parsePlaceForm(form: FormData): PlacePayload {
   if (!name) throw new PlaceFormError("이름은 필수입니다.");
   if (!address) throw new PlaceFormError("주소는 필수입니다.");
 
-  const lat = Number(str(form.get("lat")));
-  const lng = Number(str(form.get("lng")));
+  // 빈 문자열은 Number("")===0 이라 검증을 통과해버리므로 먼저 빈 값을 거른다.
+  const latRaw = str(form.get("lat"));
+  const lngRaw = str(form.get("lng"));
+  if (!latRaw || !lngRaw) {
+    throw new PlaceFormError("좌표(lat/lng)는 필수입니다.");
+  }
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     throw new PlaceFormError("좌표(lat/lng)는 숫자여야 합니다.");
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new PlaceFormError("좌표 범위가 올바르지 않습니다(위도 -90~90, 경도 -180~180).");
   }
 
   const priceRaw = str(form.get("iced_americano_price"));

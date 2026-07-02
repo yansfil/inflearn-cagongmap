@@ -1,5 +1,6 @@
 import "server-only";
 
+import { requireAdmin } from "./admin";
 import { getSupabaseAdmin } from "./supabaseAdmin";
 
 /**
@@ -35,7 +36,13 @@ export interface EditRequestReport {
   created_at: string;
 }
 
-/** user_id → email 맵을 admin auth API 로 만든다(제보 건수 규모상 전체 나열로 충분). */
+/**
+ * user_id → email 맵을 admin auth API 로 만든다.
+ *
+ * 필요한 user_id 만 getUserById 로 직접 조회한다(전체 사용자 나열 X).
+ * 전체 나열은 O(전체 사용자)이고 사용자가 많으면 페이지 캡에 걸려 일부 이메일이
+ * 누락됐다. 여기서는 O(제보자 수)이며 각 조회를 동시에 돌린다.
+ */
 async function emailMap(
   userIds: string[]
 ): Promise<Map<string, string | null>> {
@@ -44,23 +51,18 @@ async function emailMap(
   if (unique.length === 0) return map;
 
   const supabase = getSupabaseAdmin();
-  // listUsers 페이지네이션: 제보자 수가 적어 첫 페이지(기본 50)로 충분하나,
-  // 안전하게 몇 페이지 돈다.
-  for (let page = 1; page <= 20; page++) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage: 200,
-    });
-    if (error || !data?.users?.length) break;
-    for (const u of data.users) {
-      if (unique.includes(u.id)) map.set(u.id, u.email ?? null);
-    }
-    if (data.users.length < 200) break;
-  }
+  const results = await Promise.all(
+    unique.map(async (id) => {
+      const { data, error } = await supabase.auth.admin.getUserById(id);
+      return { id, email: error ? null : data.user?.email ?? null };
+    })
+  );
+  for (const { id, email } of results) map.set(id, email);
   return map;
 }
 
 export async function listSubmissions(): Promise<SubmissionReport[]> {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_submissions")
@@ -84,6 +86,7 @@ export async function listSubmissions(): Promise<SubmissionReport[]> {
 }
 
 export async function listEditRequests(): Promise<EditRequestReport[]> {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_edit_requests")
@@ -92,18 +95,18 @@ export async function listEditRequests(): Promise<EditRequestReport[]> {
   if (error) throw new Error(`수정 요청 목록 조회 실패: ${error.message}`);
 
   const rows = data ?? [];
-  const emails = await emailMap(rows.map((r) => r.user_id));
-
-  // 대상 장소명 매핑
   const placeIds = Array.from(new Set(rows.map((r) => r.place_id)));
+
+  // 이메일 조회와 대상 장소명 조회는 서로 독립적이라 동시에 돌린다.
+  const [emails, places] = await Promise.all([
+    emailMap(rows.map((r) => r.user_id)),
+    placeIds.length > 0
+      ? supabase.from("places").select("id,name").in("id", placeIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ]);
+
   const placeNames = new Map<string, string>();
-  if (placeIds.length > 0) {
-    const { data: places } = await supabase
-      .from("places")
-      .select("id,name")
-      .in("id", placeIds);
-    for (const p of places ?? []) placeNames.set(p.id, p.name);
-  }
+  for (const p of places.data ?? []) placeNames.set(p.id, p.name);
 
   return rows.map((r) => ({
     id: r.id,
@@ -121,6 +124,7 @@ export async function listEditRequests(): Promise<EditRequestReport[]> {
 export async function getEditRequest(
   id: string
 ): Promise<EditRequestReport | null> {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_edit_requests")
@@ -129,18 +133,16 @@ export async function getEditRequest(
     .maybeSingle();
   if (error) throw new Error(`수정 요청 조회 실패: ${error.message}`);
   if (!data) return null;
-  const emails = await emailMap([data.user_id]);
-  const { data: place } = await supabase
-    .from("places")
-    .select("name")
-    .eq("id", data.place_id)
-    .maybeSingle();
+  const [emails, place] = await Promise.all([
+    emailMap([data.user_id]),
+    supabase.from("places").select("name").eq("id", data.place_id).maybeSingle(),
+  ]);
   return {
     id: data.id,
     user_id: data.user_id,
     user_email: emails.get(data.user_id) ?? null,
     place_id: data.place_id,
-    place_name: place?.name ?? null,
+    place_name: place.data?.name ?? null,
     memo: data.memo,
     photos: data.photos ?? [],
     status: data.status,
@@ -151,6 +153,7 @@ export async function getEditRequest(
 export async function getSubmission(
   id: string
 ): Promise<SubmissionReport | null> {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_submissions")

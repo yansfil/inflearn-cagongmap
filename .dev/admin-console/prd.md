@@ -37,11 +37,11 @@
 
 ## Non-Goals
 
-- 반려 사유 텍스트(`review_note`) 저장 — 이번 범위 밖. 필요 시 후속 마이그레이션.
-- 공개 지도 화면의 UI 를 Tailwind/shadcn 으로 재작성하는 리팩터링 — 공개 화면은 기존 손수 작성 CSS/DESIGN.md 그대로 유지.
-- 복수 관리자 role 체계 · 권한 등급 — 이메일 allowlist 단일 레벨만.
-- 제보 목록의 고급 검색 · 정렬 · 무한 스크롤 — status 필터 + 최신순만.
-- 지도 좌표를 주소로부터 자동 지오코딩 — 운영자가 폼에서 직접 입력/보정.
+- 반려 사유 텍스트(`review_note`) 저장 - 이번 범위 밖. 필요 시 후속 마이그레이션.
+- 공개 지도 화면의 UI 를 Tailwind/shadcn 으로 재작성하는 리팩터링 - 공개 화면은 기존 손수 작성 CSS/DESIGN.md 그대로 유지.
+- 복수 관리자 role 체계 · 권한 등급 - 이메일 allowlist 단일 레벨만.
+- 제보 목록의 고급 검색 · 정렬 · 무한 스크롤 - status 필터 + 최신순만.
+- 지도 좌표를 주소로부터 자동 지오코딩 - 운영자가 폼에서 직접 입력/보정.
 
 ## Requirements
 
@@ -95,7 +95,7 @@
 
 - `npm run typecheck` 통과.
 - `npm run lint` 통과.
-- `npm run test`(vitest) 통과 — 기존 `lib/cafes.test.ts` 회귀 없음. 새로 추가한 순수 로직(예: 관리자 이메일 판별, 제보→폼 매핑 함수)이 있으면 단위 테스트 포함.
+- `npm run test`(vitest) 통과 - 기존 `lib/cafes.test.ts` 회귀 없음. 새로 추가한 순수 로직(예: 관리자 이메일 판별, 제보→폼 매핑 함수)이 있으면 단위 테스트 포함.
 - grep 확인: 클라이언트 컴포넌트/번들에 `SUPABASE_SERVICE_ROLE_KEY` 및 제보/`places` 직접 쓰기 없음(AC3).
 - Server Action mutation 마다 관리자 이메일 재검증 존재(AC3).
 
@@ -111,24 +111,24 @@
 
 **신규**
 
-- `middleware.ts` — `/admin` 보호 + 세션 갱신(`@supabase/ssr`).
-- `app/auth/callback/route.ts` — OAuth code 교환 → 쿠키 세션.
-- `lib/supabaseServer.ts` — 쿠키 기반 서버 클라이언트(RLS 적용, `auth.getUser()`용).
-- `lib/supabaseAdmin.ts` — `service_role` 클라이언트, `server-only` 가드.
-- `lib/admin.ts` — `ADMIN_EMAILS` 파싱 · `isAdminEmail()` · Server Action 가드 헬퍼(단위 테스트 대상).
-- `app/admin/layout.tsx` — Tailwind/shadcn 스코프 진입점 + 서버 가드.
+- `middleware.ts` - `/admin` 보호 + 세션 갱신(`@supabase/ssr`).
+- `app/auth/callback/route.ts` - OAuth code 교환 → 쿠키 세션.
+- `lib/supabaseServer.ts` - 쿠키 기반 서버 클라이언트(RLS 적용, `auth.getUser()`용).
+- `lib/supabaseAdmin.ts` - `service_role` 클라이언트, `server-only` 가드.
+- `lib/admin.ts` - `ADMIN_EMAILS` 파싱 · `isAdminEmail()` · Server Action 가드 헬퍼(단위 테스트 대상).
+- `app/admin/layout.tsx` - Tailwind/shadcn 스코프 진입점 + 서버 가드.
 - `app/admin/reports/page.tsx` (+ 제보 표/dialog 클라이언트 컴포넌트).
 - `app/admin/places/page.tsx`, `app/admin/places/new/page.tsx`, `app/admin/places/[id]/edit/page.tsx` (+ 장소 폼 컴포넌트).
-- `app/admin/actions.ts`(또는 도메인별 분리) — 승인/반려/장소 CRUD/사진 관리 Server Action.
-- `components/ui/*` — shadcn 컴포넌트.
+- `app/admin/actions.ts`(또는 도메인별 분리) - 승인/반려/장소 CRUD/사진 관리 Server Action.
+- `components/ui/*` - shadcn 컴포넌트.
 - Tailwind 설정(`tailwind.config.*`, `postcss.config.*`, `components.json`), `/admin` 전용 CSS 진입.
 
 **변경**
 
-- `lib/supabaseBrowser.ts` / `components/AppStateProvider.tsx` / `components/KakaoLogin.tsx` — `@supabase/ssr` 브라우저 클라이언트 + code flow 로 조정(R1, R2).
-- `.env.local.example` — `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAILS` 추가.
-- `package.json` — `@supabase/ssr`, Tailwind/shadcn 관련 devDependencies 추가.
-- 필요 시 `place_submissions`/`place_edit_requests` 를 관리자가 전체 조회하는 경로 — **`service_role` 서버 조회로 처리**(RLS 는 유지, 새 정책 추가하지 않음). 스키마 변경 없음.
+- `lib/supabaseBrowser.ts` / `components/AppStateProvider.tsx` / `components/KakaoLogin.tsx` - `@supabase/ssr` 브라우저 클라이언트 + code flow 로 조정(R1, R2).
+- `.env.local.example` - `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAILS` 추가.
+- `package.json` - `@supabase/ssr`, Tailwind/shadcn 관련 devDependencies 추가.
+- 필요 시 `place_submissions`/`place_edit_requests` 를 관리자가 전체 조회하는 경로 - **`service_role` 서버 조회로 처리**(RLS 는 유지, 새 정책 추가하지 않음). 스키마 변경 없음.
 
 **스키마**: 이번 범위에서 마이그레이션 추가는 없다(반려 사유 컬럼은 Non-Goal). 만약 사진 관리용 스토리지 경로 정책이 필요하면 `service_role` 사용으로 정책 없이 처리하는 것을 우선한다.
 

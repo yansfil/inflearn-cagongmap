@@ -52,7 +52,7 @@ export function validateFiles(files: File[]): void {
 }
 
 /** 파일명에서 경로에 안전한 확장자만 남긴다. */
-function safeName(name: string): string {
+export function safeName(name: string): string {
   const dot = name.lastIndexOf(".");
   const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, "") : "";
   const rand = Math.random().toString(36).slice(2, 8);
@@ -77,11 +77,27 @@ export async function uploadPhotosWithPaths(
   userId: string,
   files: File[]
 ): Promise<UploadedPhoto[]> {
+  // 사용자 업로드는 uploads/{uid}/ 규약(스토리지 RLS: 본인 폴더만).
+  return uploadFilesToPrefix(supabase, `uploads/${userId}`, files);
+}
+
+/**
+ * 파일들을 `${prefix}/{safeName}` 경로에 올리고 {path,url} 배열을 반환한다.
+ * 하나라도 실패하면 지금까지 올린 것을 정리하고 UploadError 를 던진다.
+ *
+ * prefix 로 사용자 경로(uploads/{uid})와 관리자 경로(places/{placeId})를 모두
+ * 다룬다. 검증(MIME/용량/장수)·부분 실패 정리 로직을 여기 한곳에 둔다.
+ */
+export async function uploadFilesToPrefix(
+  supabase: SupabaseClient,
+  prefix: string,
+  files: File[]
+): Promise<UploadedPhoto[]> {
   validateFiles(files);
 
   const uploaded: UploadedPhoto[] = [];
   for (const file of files) {
-    const path = `uploads/${userId}/${safeName(file.name)}`;
+    const path = `${prefix}/${safeName(file.name)}`;
     const { error } = await supabase.storage
       .from(UPLOAD_BUCKET)
       .upload(path, file, { contentType: file.type, upsert: false });

@@ -15,7 +15,14 @@ export default function LoginPrompt() {
     if (!supabase) return;
     await supabase.auth.signInWithOAuth({
       provider: "kakao",
-      options: { redirectTo: window.location.origin },
+      options: {
+        // code flow: 카카오 → /auth/callback 에서 code 를 세션으로 교환한다.
+        // (KakaoLogin 과 동일. origin 으로 바로 돌아오면 code 가 교환되지 않아
+        //  로그인이 조용히 실패한다.)
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          window.location.pathname + window.location.search
+        )}`,
+      },
     });
   }
 

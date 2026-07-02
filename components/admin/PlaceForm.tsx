@@ -41,11 +41,24 @@ export interface PlaceFormProps {
   initialPhotos?: string[];
 }
 
-function SubmitButton({ mode }: { mode: "create" | "edit" }) {
+function SubmitButton({
+  mode,
+  uploading,
+}: {
+  mode: "create" | "edit";
+  uploading: boolean;
+}) {
   const { pending } = useFormStatus();
+  const disabled = pending || uploading;
   return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "저장 중..." : mode === "create" ? "장소 추가" : "장소 수정"}
+    <Button type="submit" disabled={disabled}>
+      {uploading
+        ? "사진 업로드 중..."
+        : pending
+        ? "저장 중..."
+        : mode === "create"
+        ? "장소 추가"
+        : "장소 수정"}
     </Button>
   );
 }
@@ -65,6 +78,8 @@ export function PlaceForm({
   const [photos, setPhotos] = useState<string[]>(
     initialPhotos ?? initial?.photos ?? []
   );
+  // 사진 업로드 진행 중에는 저장을 막아, 방금 올린 사진이 누락된 채 저장되는 걸 방지.
+  const [uploading, setUploading] = useState(false);
 
   return (
     <form action={formAction} className="grid gap-6 max-w-2xl">
@@ -231,13 +246,17 @@ export function PlaceForm({
           </Field>
           <div className="grid gap-2">
             <Label>사진</Label>
-            <PhotoManager photos={photos} onChange={setPhotos} />
+            <PhotoManager
+              photos={photos}
+              onChange={setPhotos}
+              onBusyChange={setUploading}
+            />
           </div>
         </CardContent>
       </Card>
 
       <div className="flex gap-2">
-        <SubmitButton mode={mode} />
+        <SubmitButton mode={mode} uploading={uploading} />
       </div>
     </form>
   );

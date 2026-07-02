@@ -15,23 +15,34 @@ import { uploadAdminPhotosAction } from "../../app/admin/actions";
 export interface PhotoManagerProps {
   photos: string[];
   onChange: (next: string[]) => void;
+  /** 업로드 진행 상태를 부모(PlaceForm)에 알려 저장 버튼을 잠그게 한다. */
+  onBusyChange?: (busy: boolean) => void;
 }
 
-export function PhotoManager({ photos, onChange }: PhotoManagerProps) {
+export function PhotoManager({
+  photos,
+  onChange,
+  onBusyChange,
+}: PhotoManagerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
 
+  function updateBusy(next: boolean) {
+    setBusy(next);
+    onBusyChange?.(next);
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
-    setBusy(true);
+    updateBusy(true);
     setError(null);
     try {
       const form = new FormData();
       for (const f of Array.from(files)) form.append("files", f);
       const result = await uploadAdminPhotosAction(form);
-      if (!result.ok || !result.urls) {
+      if (!result.ok || !result.urls || result.urls.length === 0) {
         setError(result.error ?? "업로드에 실패했습니다.");
         return;
       }
@@ -47,7 +58,7 @@ export function PhotoManager({ photos, onChange }: PhotoManagerProps) {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      updateBusy(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
