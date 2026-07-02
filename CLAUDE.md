@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 카공맵 (cagongmap) — a service for finding laptop-work-friendly cafes on a map. Renders seed cafes from `data/cafes.json` as markers on a Kakao Map. Current stage is **map + markers only**; filters, list view, login, and UGC reporting are deferred (see `docs/scope.md`).
 
+## Communication
+
+이 저장소에서 사용자와 질의응답할 때는 **반드시 한국어로 답한다**.
+사용자가 명시적으로 영어 답변을 요청하지 않는 한, 설명, 진행 상황 공유, 오류 보고, 최종 답변 모두 한국어로 작성한다.
+기술 용어와 코드 식별자는 원문을 유지해도 되지만, 판단과 설명은 한국어로 분명하고 직접적으로 말한다.
+
 ## Repository layout convention
 
 `docs/` is for **documentation only** (Markdown: scope, specs, notes). Do **not** put executable artifacts there — SQL migrations belong in `supabase/migrations/`, seed/runtime data in `data/`. (Historically `schema.sql`/`seed.sql` lived in `docs/`; they've since moved to `supabase/migrations/`.)
@@ -57,6 +63,20 @@ create policy "delete own" on public.my_table
   for delete using (auth.uid() = user_id);
 ```
 
+## Auth (@supabase/ssr, Kakao code flow)
+
+Login uses **`@supabase/ssr` cookie sessions** with Kakao OAuth **code flow** (not the old implicit/localStorage flow).
+
+- Any `signInWithOAuth` call must set `redirectTo` to `${window.location.origin}/auth/callback?next=<path>`. Returning straight to `origin` leaves the PKCE `?code=` unexchanged and **login silently fails** (this exact miss broke `LoginPrompt.tsx` once). The code exchange lives only in `app/auth/callback/route.ts`.
+- Browser client: `lib/supabaseBrowser.ts` (`createBrowserClient`). Server client: `lib/supabaseServer.ts` (`createServerClient`, `server-only`); read the user with `getSupabaseServer()` → `auth.getUser()`.
+- `middleware.ts` refreshes the session on each request, but its matcher **excludes `/auth/callback`** so the callback route stays the sole cookie authority for the code exchange.
+
+## Admin console (/admin)
+
+- Access is restricted to `ADMIN_EMAILS` (server-only env, comma-separated). `SUPABASE_SERVICE_ROLE_KEY` is server-only and lives **only** in `lib/supabaseAdmin.ts` (`import "server-only"`).
+- Every admin data access - Server Action mutations **and** service_role reads (`lib/adminData.ts`, `lib/adminReports.ts`) - must call `requireAdmin()` at its start. The `/admin` layout guard is defense-in-depth, not the sole gate: the guard travels with the service_role capability, not the route.
+- Admin write access is enforced in **server code, not by adding RLS policies**. RLS stays as designed; client code never writes to `places`/제보 tables directly (all mutations go through Server Actions in `app/admin/actions.ts`).
+
 ## Kakao Map key (required to see markers)
 
 The app needs `NEXT_PUBLIC_KAKAO_MAP_KEY` (Kakao JavaScript key) in `.env.local`. Copy `.env.local.example` → `.env.local` and fill it. The Kakao app must register `http://localhost:3030` under Platform > Web, or the SDK fails to load. Without a real key, `app/page.js` short-circuits to a "키가 필요합니다" notice screen instead of the map — this is expected, not a bug.
@@ -80,6 +100,12 @@ Before changing any UI or CSS, **read `DESIGN.md` first**.
 
 - DESIGN.md's color, spacing, component, and tone (말투) standards take precedence.
 - If a change requires conflicting with those standards, **explain the reason first** before making it.
+
+### Building UI
+
+- **Prefer shadcn/ui + Tailwind CSS** for new UI. Reuse the existing primitives in `components/ui/*` (button, card, table, dialog, input, select, etc.) instead of hand-rolling equivalents; add a new shadcn component to `components/ui/` when one is missing rather than reimplementing it inline.
+- Map DESIGN.md's tokens (color, spacing, radius, tone) onto the Tailwind theme / shadcn CSS variables so the two stay in sync - DESIGN.md remains the source of truth for visual decisions, shadcn/Tailwind is the implementation.
+- **Tailwind/shadcn is currently scoped to `/admin`** (`tailwind.config.ts` content globs + `preflight: false` + `.admin-root` CSS variables in `app/admin/admin.css`), so it does not leak into the public map screens (which use hand-written CSS in `app/globals.css`). If you introduce shadcn/Tailwind on a public screen, extend that scoping deliberately and verify the public bundle (`app/layout.css`) does not pick up admin tokens.
 
 ## Browser verification
 
