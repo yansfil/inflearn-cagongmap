@@ -18,3 +18,8 @@
 
 # playwright-cli runtime artifacts (snapshots, console logs)
 /.playwright-cli
+
+# skill-creator eval 실행 산출물(리포트·채점·벤치마크) — 재생성 가능한 작업 부산물
+/.claude/skills/*-workspace
+__pycache__/
+*.pyc
