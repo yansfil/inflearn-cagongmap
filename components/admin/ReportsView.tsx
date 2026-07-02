@@ -30,6 +30,7 @@ import {
   rejectSubmissionAction,
   rejectEditRequestAction,
 } from "../../app/admin/actions";
+import { safeHttpUrl } from "../../lib/safeUrl";
 
 type Selected =
   | { kind: "submission"; data: SubmissionReport }
@@ -300,14 +301,7 @@ function ReportDetail({ selected }: { selected: NonNullable<Selected> }) {
       </Row>
       {kind === "submission" ? (
         <Row label="URL">
-          <a
-            href={data.naver_place_url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline break-all"
-          >
-            {data.naver_place_url}
-          </a>
+          <SubmissionUrl url={data.naver_place_url} />
         </Row>
       ) : (
         <Row label="대상 장소">{data.place_name ?? data.place_id}</Row>
@@ -332,6 +326,33 @@ function ReportDetail({ selected }: { selected: NonNullable<Selected> }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * 제보 URL 표시. naver_place_url 은 사용자 입력이라 anon 으로 직접 insert 하면
+ * `javascript:` 같은 위험 스킴이 들어올 수 있다. http(s) 로 검증된 값만 클릭 가능한
+ * 링크로 렌더하고, 그 외에는 평문으로만 보여 관리자 세션에서의 스크립트 실행을 막는다.
+ */
+function SubmissionUrl({ url }: { url: string }) {
+  const safe = safeHttpUrl(url);
+  if (safe) {
+    return (
+      <a
+        href={safe}
+        target="_blank"
+        rel="noreferrer"
+        className="text-primary underline break-all"
+      >
+        {safe}
+      </a>
+    );
+  }
+  return (
+    <span className="break-all text-muted-foreground">
+      {url}{" "}
+      <span className="text-destructive">(안전하지 않은 URL — 링크 비활성화)</span>
+    </span>
   );
 }
 

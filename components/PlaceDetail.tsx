@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Cafe, Noise, Outlet, ReviewRating, WorkFit } from "../lib/types";
 import { useAppState } from "./AppStateProvider";
 import SubmissionForm from "./SubmissionForm";
+import { safeHttpUrl } from "../lib/safeUrl";
 
 // 리뷰 등급 표시용 (버튼 라벨 + 이모지). DESIGN: 큰 색 배지 금지, 선택만 강조.
 const REVIEW_OPTIONS: { rating: ReviewRating; icon: string; label: string }[] = [
@@ -277,10 +278,10 @@ export default function PlaceDetail({ cafe, onClose }: PlaceDetailProps) {
         {cafe.address && <p className="detail__address">{cafe.address}</p>}
         <h2 className="detail__name">{cafe.name}</h2>
 
-        {cafe.naver_place_url && (
+        {safeHttpUrl(cafe.naver_place_url) && (
           <a
             className="detail__naver"
-            href={cafe.naver_place_url}
+            href={safeHttpUrl(cafe.naver_place_url)!}
             target="_blank"
             rel="noopener noreferrer"
           >
