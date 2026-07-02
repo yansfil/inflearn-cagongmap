@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { siteGraph } from "../lib/structuredData";
 
 const siteUrl = "https://cagongmap.xyz";
 const title = "카공맵 - 노트북 작업하기 좋은 카페";
@@ -40,6 +41,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
+        {/* 사이트 정체성 구조화 데이터 (WebSite + Organization) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteGraph()) }}
         />
       </head>
       <body>{children}</body>
