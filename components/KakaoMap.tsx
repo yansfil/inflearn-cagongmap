@@ -5,6 +5,7 @@ import type { Cafe } from "../lib/types";
 import PlaceDetail from "./PlaceDetail";
 import KakaoLogin from "./KakaoLogin";
 import BookmarkList from "./BookmarkList";
+import ReportEntry from "./ReportEntry";
 import LoginPrompt from "./LoginPrompt";
 import { AppStateProvider } from "./AppStateProvider";
 
@@ -156,6 +157,7 @@ export default function KakaoMap({ cafes, appKey }: KakaoMapProps) {
             <KakaoLogin />
           </div>
           <BookmarkList cafes={cafes} onSelect={setSelected} />
+          <ReportEntry />
         </aside>
 
         <PlaceDetail cafe={selected} onClose={() => setSelected(null)} />

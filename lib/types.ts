@@ -42,6 +42,16 @@ export interface Cafe {
   photos: string[];
 }
 
+/** 리뷰 등급 (reviews.rating enum). */
+export type ReviewRating = "good" | "normal" | "bad";
+
+/** 장소별 리뷰 집계 (review_counts(place_id) RPC 반환). */
+export interface ReviewCounts {
+  good: number;
+  normal: number;
+  bad: number;
+}
+
 /** Supabase places 테이블에서 select 한 원본 행(정규화 전). */
 export interface PlaceRow {
   id: string;

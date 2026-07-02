@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { Cafe, Noise, Outlet, WorkFit } from "../lib/types";
+import type { Cafe, Noise, Outlet, ReviewRating, WorkFit } from "../lib/types";
 import { useAppState } from "./AppStateProvider";
+import SubmissionForm from "./SubmissionForm";
+
+// 리뷰 등급 표시용 (버튼 라벨 + 이모지). DESIGN: 큰 색 배지 금지, 선택만 강조.
+const REVIEW_OPTIONS: { rating: ReviewRating; icon: string; label: string }[] = [
+  { rating: "good", icon: "👍", label: "좋아요" },
+  { rating: "normal", icon: "🤔", label: "보통" },
+  { rating: "bad", icon: "👎", label: "별로" },
+];
 
 // 데이터의 코드값 → 한글 라벨 매핑 (KakaoMap 과 동일 규약)
 const OUTLET_LABEL: Record<Outlet, string> = {
@@ -63,20 +71,47 @@ interface PlaceDetailProps {
 }
 
 export default function PlaceDetail({ cafe, onClose }: PlaceDetailProps) {
-  const { isBookmarked, toggleBookmark } = useAppState();
+  const {
+    isBookmarked,
+    toggleBookmark,
+    loadReviews,
+    reviewCounts,
+    myReview,
+    setReview,
+    user,
+    openLoginPrompt,
+  } = useAppState();
 
   const placeId = cafe?.id ?? null;
   const photoTrackRef = useRef<HTMLDivElement>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
+  // 상세가 열리거나 다른 카페로 바뀌면 리뷰 집계 + 내 리뷰를 로드
   useEffect(() => {
+    if (placeId) loadReviews(placeId);
+  }, [placeId, loadReviews]);
+
+  // 다른 카페로 전환되면 열려 있던 수정요청 폼을 닫는다
+  useEffect(() => {
+    setEditOpen(false);
     setActivePhotoIndex(0);
     photoTrackRef.current?.scrollTo({ left: 0 });
   }, [placeId]);
 
+  function handleEditRequest() {
+    if (!user) {
+      openLoginPrompt();
+      return;
+    }
+    setEditOpen(true);
+  }
+
   if (!cafe) return null;
 
   const bookmarked = isBookmarked(cafe.id);
+  const counts = reviewCounts(cafe.id);
+  const mine = myReview(cafe.id);
 
   const hours = cafe.is_24h
     ? "24시간"
@@ -195,6 +230,7 @@ export default function PlaceDetail({ cafe, onClose }: PlaceDetailProps) {
         >
           {photos.length > 0 ? (
             photos.map((url, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={`${url}-${index}`}
                 className="detail__photo"
@@ -268,7 +304,46 @@ export default function PlaceDetail({ cafe, onClose }: PlaceDetailProps) {
             {WORK_FIT_LABEL[cafe.work_fit] ?? cafe.work_fit}
           </li>
         </ul>
+
+        <p className="review__title">이 카페 어땠나요</p>
+        <ul className="review">
+          {REVIEW_OPTIONS.map(({ rating, icon, label }) => {
+            const selected = mine === rating;
+            return (
+              <li key={rating}>
+                <button
+                  type="button"
+                  className={`review__btn${selected ? " review__btn--on" : ""}`}
+                  aria-pressed={selected}
+                  onClick={() => setReview(cafe.id, rating)}
+                >
+                  <span className="review__icon" aria-hidden="true">
+                    {icon}
+                  </span>
+                  <span className="review__label">{label}</span>
+                  <span className="review__count">{counts[rating]}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <button
+          type="button"
+          className="detail__edit-request"
+          onClick={handleEditRequest}
+        >
+          정보 수정 요청
+        </button>
       </div>
+
+      {editOpen && (
+        <SubmissionForm
+          kind="edit"
+          placeId={cafe.id}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
     </aside>
   );
 }

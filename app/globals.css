@@ -165,7 +165,7 @@ body {
   justify-content: center;
 }
 
-/* 북마크 하트 — 평소 흰 외곽선 하트, 저장 시 primary 채움 */
+/* 북마크 하트 - 평소 흰 외곽선 하트, 저장 시 primary 채움 */
 .detail__bookmark {
   font-size: 17px;
 }
@@ -427,6 +427,67 @@ body {
   border-radius: var(--r-full);
   font-size: 14px;
   font-weight: 700;
+}
+
+/* 리뷰 - good/normal/bad 3버튼. 집계 + 내 선택.
+   DESIGN: 조용한 surface, 선택만 primary 로 강조(다색 배지 금지). */
+.review__title {
+  margin-top: var(--s-md);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+.review {
+  list-style: none;
+  display: flex;
+  gap: var(--s-sm);
+}
+
+.review > li {
+  flex: 1;
+}
+
+.review__btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 74px;
+  padding: 10px 6px;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.review__btn:hover {
+  border-color: var(--outline);
+}
+
+.review__btn--on {
+  border-color: var(--primary);
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.review__icon {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.review__label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.review__count {
+  font-size: 13px;
+  font-weight: 800;
 }
 
 /* 모바일: 하단 시트로 전환 */
@@ -838,4 +899,256 @@ body {
   font-size: 14px;
   line-height: 20px;
   color: var(--on-surface-variant);
+}
+
+/* 정보 수정 요청 진입 버튼 - 상세 하단 보조 액션(작게, primary 아웃라인) */
+.detail__edit-request {
+  margin-top: var(--s-md);
+  align-self: flex-start;
+  width: auto;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-full);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.detail__edit-request:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 제보/수정요청 폼 모달 - login-modal 톤을 따르되 좌측 정렬 폼 */
+.submit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-lg);
+  background: rgba(33, 27, 26, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.submit-modal__box {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: var(--s-xl) var(--s-lg) var(--s-lg);
+  box-shadow: var(--shadow-brew);
+  max-height: 86dvh;
+  overflow-y: auto;
+}
+
+.submit-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.submit-modal__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.submit-modal__title {
+  margin-top: var(--s-xs);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 26px;
+  color: var(--on-surface);
+}
+
+.submit-modal__desc {
+  margin: var(--s-sm) 0 var(--s-lg);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--on-surface-variant);
+}
+
+.submit-form {
+  margin-top: var(--s-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-md);
+}
+
+.submit-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xs);
+}
+
+.submit-form__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+}
+
+.submit-form__input,
+.submit-form__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.submit-form__textarea {
+  resize: vertical;
+}
+
+.submit-form__input:focus,
+.submit-form__textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.submit-form__error {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.submit-modal__submit {
+  margin-top: var(--s-xs);
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.submit-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 새 장소 제보 진입 - 좌측 패널 하단, 북마크 아래의 조용한 보조 액션 */
+.report-entry {
+  margin-top: var(--s-sm);
+}
+
+.report-entry__btn {
+  width: 100%;
+  height: 44px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.report-entry__btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 이미지 선택: 드롭존 + 썸네일 삭제. 기본 file input 대신 명확한 터치 타깃을 둔다. */
+.imgpick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-sm);
+}
+
+.imgpick__drop {
+  display: flex;
+  min-height: 112px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-xs);
+  padding: var(--s-lg) var(--s-md);
+  border: 1.5px dashed var(--outline-variant);
+  border-radius: var(--r-md);
+  background: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.imgpick__drop:hover,
+.imgpick__drop--over {
+  border-color: var(--primary);
+  background: var(--surface-container);
+}
+
+.imgpick__drop-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.imgpick__drop-text {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.imgpick__grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-sm);
+}
+
+.imgpick__thumb {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-container);
+}
+
+.imgpick__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imgpick__remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--r-full);
+  background: rgba(33, 27, 26, 0.62);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
 }
