@@ -22,8 +22,12 @@ export default function KakaoLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "kakao",
       options: {
-        // implicit: 홈으로 돌아오면 supabase-js 가 URL 토큰을 세션화한다.
-        redirectTo: window.location.origin,
+        // code flow: 카카오 → /auth/callback 에서 code 를 세션으로 교환한다.
+        // next 로 로그인 시작 위치를 넘겨 돌아올 곳을 지정한다(관리자 로그인 후
+        // /admin 복귀 등).
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          window.location.pathname + window.location.search
+        )}`,
       },
     });
   }

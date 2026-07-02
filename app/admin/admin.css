@@ -1,0 +1,128 @@
+/* /admin 전용 스타일 진입점. admin 레이아웃에서만 import 한다. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * shadcn/ui CSS 변수. DESIGN.md 의 warm quiet map-first 토큰을 admin 에 맞춰
+ * HSL 값으로 변환해 사용한다. 전역 :root 대신 .admin-root 스코프에 둬서
+ * 공개 화면(손수 작성 CSS)에 색 토큰이 새지 않게 한다.
+ * preflight 를 껐으므로(admin 스코프 밖 보호) admin 서브트리에만
+ * 최소 리셋을 직접 건다.
+ */
+.admin-root {
+  --background: 17 100% 99%;
+  --foreground: 9 12% 12%;
+  --card: 30 100% 99%;
+  --card-foreground: 9 12% 12%;
+  --popover: 30 100% 99%;
+  --popover-foreground: 9 12% 12%;
+  --primary: 358 31% 41%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 18 45% 96%;
+  --secondary-foreground: 13 8% 33%;
+  --muted: 15 33% 93%;
+  --muted-foreground: 13 8% 33%;
+  --accent: 80 31% 85%;
+  --accent-foreground: 81 12% 36%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 14 23% 85%;
+  --input: 14 23% 85%;
+  --ring: 358 31% 41%;
+  --success: 168 47% 90%;
+  --success-foreground: 172 41% 22%;
+  --warning: 5 45% 84%;
+  --warning-foreground: 358 32% 31%;
+  --radius: 0.5rem;
+  --admin-shadow: 0 18px 42px -24px rgba(50, 37, 34, 0.34);
+
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+}
+
+/* admin 서브트리 최소 리셋 (preflight 대체, 스코프 한정) */
+.admin-root *,
+.admin-root *::before,
+.admin-root *::after {
+  box-sizing: border-box;
+}
+.admin-root button {
+  font-family: inherit;
+}
+.admin-root input,
+.admin-root select,
+.admin-root textarea {
+  font-family: inherit;
+}
+
+/* 레이아웃 셸 */
+.admin-header {
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.92);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.admin-header__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.admin-header__brand {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  text-decoration: none;
+  color: hsl(var(--foreground));
+}
+.admin-nav {
+  display: flex;
+  gap: 0.25rem;
+}
+.admin-nav a {
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: 9999px;
+}
+.admin-nav a:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+.admin-header__user {
+  margin-left: auto;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8125rem;
+}
+.admin-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+@media (max-width: 720px) {
+  .admin-header__inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-header__user {
+    margin-left: 0;
+    word-break: break-all;
+  }
+
+  .admin-main {
+    padding: 1.25rem 1rem 3rem;
+  }
+}
