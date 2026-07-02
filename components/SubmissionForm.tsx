@@ -180,6 +180,7 @@ export default function SubmissionForm({
                   value={naverUrl}
                   onChange={(e) => setNaverUrl(e.target.value)}
                   placeholder="https://map.naver.com/..."
+                  maxLength={2048}
                   required
                 />
               </label>
@@ -202,6 +203,7 @@ export default function SubmissionForm({
                     ? "작업하기 좋은 이유, 콘센트/와이파이 등"
                     : "어떤 정보가 바뀌었나요? (콘센트, 영업시간 등)"
                 }
+                maxLength={1000}
                 rows={3}
               />
             </label>
