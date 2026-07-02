@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Supabase 클라이언트 (브라우저용).
@@ -14,9 +14,9 @@ import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-let browserClient = null;
+let browserClient: SupabaseClient | null = null;
 
-export function getSupabaseBrowser() {
+export function getSupabaseBrowser(): SupabaseClient | null {
   if (!url || !anonKey) {
     return null;
   }

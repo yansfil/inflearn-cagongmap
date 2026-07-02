@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Cafe } from "../lib/types";
 import PlaceDetail from "./PlaceDetail";
 import KakaoLogin from "./KakaoLogin";
 import BookmarkList from "./BookmarkList";
@@ -9,7 +10,7 @@ import { AppStateProvider } from "./AppStateProvider";
 
 // 마커용 커스텀 오버레이 HTML.
 // 대표 사진이 있으면 원형 썸네일, 없으면 기본 핀 느낌의 점 마커.
-function buildMarkerContent(cafe) {
+function buildMarkerContent(cafe: Cafe): HTMLElement {
   const thumb = cafe.photos?.[0];
   const wrap = document.createElement("div");
   wrap.className = "marker";
@@ -30,7 +31,7 @@ function buildMarkerContent(cafe) {
 }
 
 // 카카오 SDK 스크립트를 한 번만 로드 (autoload=false 로 수동 init)
-function loadKakaoSdk(appKey) {
+function loadKakaoSdk(appKey: string): Promise<typeof kakao> {
   return new Promise((resolve, reject) => {
     if (window.kakao && window.kakao.maps) {
       resolve(window.kakao);
@@ -56,14 +57,19 @@ function loadKakaoSdk(appKey) {
   });
 }
 
-export default function KakaoMap({ cafes, appKey }) {
-  const containerRef = useRef(null);
-  const markerElsRef = useRef([]);
-  const selectedRef = useRef(null);
-  const [selected, setSelected] = useState(null);
+interface KakaoMapProps {
+  cafes: Cafe[];
+  appKey: string;
+}
+
+export default function KakaoMap({ cafes, appKey }: KakaoMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markerElsRef = useRef<HTMLElement[]>([]);
+  const selectedRef = useRef<Cafe | null>(null);
+  const [selected, setSelected] = useState<Cafe | null>(null);
 
   // 선택된 카페 마커에만 marker--selected 토글
-  function applySelected(cafe) {
+  function applySelected(cafe: Cafe | null) {
     const id = cafe ? String(cafe.id ?? cafe.name) : null;
     markerElsRef.current.forEach((el) => {
       el.classList.toggle("marker--selected", el.dataset.cafeId === id);
@@ -90,7 +96,7 @@ export default function KakaoMap({ cafes, appKey }) {
         });
 
         const bounds = new kakao.maps.LatLngBounds();
-        const markerEls = [];
+        const markerEls: HTMLElement[] = [];
 
         cafes.forEach((cafe) => {
           const position = new kakao.maps.LatLng(cafe.lat, cafe.lng);

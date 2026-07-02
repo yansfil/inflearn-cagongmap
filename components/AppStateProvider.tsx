@@ -7,8 +7,22 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "../lib/supabaseBrowser";
+
+interface AppState {
+  supabase: SupabaseClient | null;
+  user: User | null;
+  authReady: boolean;
+  bookmarkIds: Set<string>;
+  toggleBookmark: (placeId: string) => Promise<boolean>;
+  isBookmarked: (placeId: string) => boolean;
+  loginPromptOpen: boolean;
+  openLoginPrompt: () => void;
+  closeLoginPrompt: () => void;
+}
 
 /**
  * 앱 전역 상태: 로그인 사용자 + 북마크 + 로그인 안내 모달.
@@ -18,14 +32,14 @@ import { getSupabaseBrowser } from "../lib/supabaseBrowser";
  * - 비로그인 사용자가 하트를 누르면 loginPromptOpen 을 켜서 모달을 띄운다.
  * - 북마크는 place_id(Set) 로만 들고, 표시용 카페 정보는 cafes 배열에서 매칭한다.
  */
-const AppStateContext = createContext(null);
+const AppStateContext = createContext<AppState | null>(null);
 
-export function AppStateProvider({ children }) {
+export function AppStateProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabaseBrowser();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   // 북마크된 place_id 집합
-  const [bookmarkIds, setBookmarkIds] = useState(() => new Set());
+  const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(() => new Set());
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
   // 세션 추적
@@ -60,7 +74,9 @@ export function AppStateProvider({ children }) {
       console.error("북마크 조회 실패:", error.message);
       return;
     }
-    setBookmarkIds(new Set(data.map((row) => row.place_id)));
+    setBookmarkIds(
+      new Set((data as { place_id: string }[]).map((row) => row.place_id))
+    );
   }, [supabase, user]);
 
   useEffect(() => {
@@ -69,7 +85,7 @@ export function AppStateProvider({ children }) {
 
   // 북마크 토글. 비로그인이면 로그인 모달을 띄우고 false 반환.
   const toggleBookmark = useCallback(
-    async (placeId) => {
+    async (placeId: string): Promise<boolean> => {
       if (!user) {
         setLoginPromptOpen(true);
         return false;
@@ -117,14 +133,14 @@ export function AppStateProvider({ children }) {
     [supabase, user, bookmarkIds]
   );
 
-  const value = useMemo(
+  const value = useMemo<AppState>(
     () => ({
       supabase,
       user,
       authReady,
       bookmarkIds,
       toggleBookmark,
-      isBookmarked: (placeId) => bookmarkIds.has(placeId),
+      isBookmarked: (placeId: string) => bookmarkIds.has(placeId),
       loginPromptOpen,
       openLoginPrompt: () => setLoginPromptOpen(true),
       closeLoginPrompt: () => setLoginPromptOpen(false),

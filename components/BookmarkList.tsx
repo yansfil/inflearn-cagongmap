@@ -1,15 +1,19 @@
 "use client";
 
+import type { Cafe } from "../lib/types";
 import { useAppState } from "./AppStateProvider";
+
+interface BookmarkListProps {
+  cafes: Cafe[];
+  onSelect: (cafe: Cafe) => void;
+}
 
 /**
  * 좌측 패널의 북마크 목록 (로그인 버튼 하단).
  * - 로그인 안 했으면 렌더링하지 않는다.
  * - 항목 클릭 시 해당 카페 상세 패널을 연다(onSelect).
- *
- * @param {{cafes: Array, onSelect: (cafe) => void}} props
  */
-export default function BookmarkList({ cafes, onSelect }) {
+export default function BookmarkList({ cafes, onSelect }: BookmarkListProps) {
   const { user, bookmarkIds } = useAppState();
 
   // 로그인 전에는 북마크 UI 자체를 숨긴다 (DESIGN.md)

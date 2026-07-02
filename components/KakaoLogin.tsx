@@ -1,10 +1,11 @@
 "use client";
 
+import type { User } from "@supabase/supabase-js";
 import { useAppState } from "./AppStateProvider";
 
 // 카카오 user_metadata 에서 표시용 이름/이메일/아바타를 뽑는다.
 // (provider 별 키가 다를 수 있어 흔한 키들을 순서대로 본다)
-function readProfile(user) {
+function readProfile(user: User) {
   const m = user?.user_metadata ?? {};
   const name =
     m.name || m.full_name || m.nickname || m.preferred_username || "사용자";

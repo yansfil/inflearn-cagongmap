@@ -1,10 +1,11 @@
 import { getSupabase } from "./supabase";
+import type { Cafe, PlaceRow } from "./types";
 
 /**
  * "HH:MM:SS" → "HH:MM" (Postgres time 은 초까지 반환, 표시에는 분까지면 충분)
  */
-function trimSeconds(t) {
-  if (!t) return t;
+export function trimSeconds(t: string | null): string {
+  if (!t) return "";
   return t.slice(0, 5);
 }
 
@@ -14,7 +15,7 @@ function trimSeconds(t) {
  *   - wifi enum('yes'|'stable'|'no') → boolean
  *   - open_time/close_time 초 잘라내기
  */
-function toCafe(row) {
+export function toCafe(row: PlaceRow): Cafe {
   return {
     id: row.id, // places uuid — 북마크 연결에 필요
     name: row.name,
@@ -27,7 +28,7 @@ function toCafe(row) {
     is_24h: row.is_24h,
     iced_americano_price: row.iced_americano_price,
     outlet: row.outlet,
-    wifi: row.wifi !== "no", // 'yes'/'stable' → true, 'no'/null → false
+    wifi: row.wifi === "yes" || row.wifi === "stable", // 'yes'/'stable' → true, 'no'/null → false
     noise: row.noise,
     work_fit: row.work_fit,
     tags: row.tags ?? [],
@@ -40,7 +41,7 @@ function toCafe(row) {
  * 서버 컴포넌트에서만 호출.
  * Supabase 설정이 없으면 빈 배열을 반환(지도는 빈 상태로 그려짐).
  */
-export async function getCafes() {
+export async function getCafes(): Promise<Cafe[]> {
   const supabase = getSupabase();
   if (!supabase) {
     return [];
@@ -59,5 +60,5 @@ export async function getCafes() {
     return [];
   }
 
-  return data.map(toCafe);
+  return (data as PlaceRow[]).map(toCafe);
 }

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Supabase 클라이언트 (서버 컴포넌트용, anon key).
@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export function getSupabase() {
+export function getSupabase(): SupabaseClient | null {
   if (!url || !anonKey) {
     return null;
   }

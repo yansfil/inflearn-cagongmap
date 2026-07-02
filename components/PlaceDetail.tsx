@@ -1,23 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { Cafe, Noise, Outlet, WorkFit } from "../lib/types";
 import { useAppState } from "./AppStateProvider";
 
 // 데이터의 코드값 → 한글 라벨 매핑 (KakaoMap 과 동일 규약)
-const OUTLET_LABEL = {
+const OUTLET_LABEL: Record<Outlet, string> = {
   many: "많음",
   some: "보통",
   few: "적음",
   none: "없음",
 };
 
-const WORK_FIT_LABEL = {
+const WORK_FIT_LABEL: Record<WorkFit, string> = {
   good: "작업 좋음",
   ok: "작업 무난",
   bad: "작업 부적합",
 };
 
-const NOISE_LABEL = {
+const NOISE_LABEL: Record<Noise, string> = {
   quiet: "조용함",
   normal: "보통",
   loud: "시끄러움",
@@ -26,7 +27,14 @@ const NOISE_LABEL = {
 // Quick Check fact card 한 칸.
 // positive=true 이면 pastel-mint 배경 + positive-text (좋은 조건 전용),
 // 그 외에는 neutral surface-container + primary 아이콘.
-function FactCard({ icon, label, value, positive = false }) {
+interface Fact {
+  icon: string;
+  label: string;
+  value: ReactNode;
+  positive?: boolean;
+}
+
+function FactCard({ icon, label, value, positive = false }: Fact) {
   return (
     <li className={`fact${positive ? " fact--positive" : ""}`}>
       <span className="fact__icon" aria-hidden="true">
@@ -49,11 +57,16 @@ function FactCard({ icon, label, value, positive = false }) {
  *   Hero image → 주소 → 카페명 → 지도에서 보기(네이버 보조 pill)
  *   → Quick Check → 자리/분위기 힌트(work_fit chip)
  */
-export default function PlaceDetail({ cafe, onClose }) {
+interface PlaceDetailProps {
+  cafe: Cafe | null;
+  onClose: () => void;
+}
+
+export default function PlaceDetail({ cafe, onClose }: PlaceDetailProps) {
   const { isBookmarked, toggleBookmark } = useAppState();
 
   const placeId = cafe?.id ?? null;
-  const photoTrackRef = useRef(null);
+  const photoTrackRef = useRef<HTMLDivElement>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
   useEffect(() => {
@@ -72,7 +85,7 @@ export default function PlaceDetail({ cafe, onClose }) {
   const photos = cafe.photos ?? [];
   const hasMultiplePhotos = photos.length > 1;
 
-  function handlePhotoScroll(event) {
+  function handlePhotoScroll(event: React.UIEvent<HTMLDivElement>) {
     const { clientWidth, scrollLeft } = event.currentTarget;
     if (!clientWidth || photos.length <= 1) return;
 
@@ -86,7 +99,7 @@ export default function PlaceDetail({ cafe, onClose }) {
     );
   }
 
-  function scrollPhoto(delta) {
+  function scrollPhoto(delta: -1 | 1) {
     if (!hasMultiplePhotos) return;
 
     const track = photoTrackRef.current;
@@ -111,7 +124,7 @@ export default function PlaceDetail({ cafe, onClose }) {
 
   // Quick Check: 콘센트 · 소음 · 와이파이 · 영업시간 · 아메리카노
   // positive 판정은 "좋은 조건"일 때만 (DESIGN.md: 민트는 좋은 조건 전용)
-  const facts = [
+  const facts: Fact[] = [
     {
       icon: "🔌",
       label: "콘센트",
