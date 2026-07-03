@@ -121,6 +121,9 @@ export async function removeUploadedPhotos(
   if (paths.length === 0) return;
   const { error } = await supabase.storage.from(UPLOAD_BUCKET).remove(paths);
   if (error) {
+    // 이 유틸은 클라이언트(SubmissionForm)와 서버(admin actions) 양쪽에서 쓰여
+    // server-only 인 lib/logger 를 여기서 쓸 수 없다. 관측이 필요한 서버 경로는
+    // 호출부(예: admin actions)에서 구조화 로그를 남긴다.
     // eslint-disable-next-line no-console
     console.error("업로드된 사진 정리 실패:", error.message);
   }

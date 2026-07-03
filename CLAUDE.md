@@ -77,6 +77,16 @@ Login uses **`@supabase/ssr` cookie sessions** with Kakao OAuth **code flow** (n
 - Every admin data access - Server Action mutations **and** service_role reads (`lib/adminData.ts`, `lib/adminReports.ts`) - must call `requireAdmin()` at its start. The `/admin` layout guard is defense-in-depth, not the sole gate: the guard travels with the service_role capability, not the route.
 - Admin write access is enforced in **server code, not by adding RLS policies**. RLS stays as designed; client code never writes to `places`/제보 tables directly (all mutations go through Server Actions in `app/admin/actions.ts`).
 
+## Logging (관측 로그)
+
+주요 로직에는 서버 구조화 로그를 남긴다. 로거는 **`lib/logger.ts`** (`import "server-only"`, `logger.{debug,info,warn,error}(event, ctx)`)이며 한 줄 JSON 을 출력한다.
+
+- **무엇에 남기나.** 관측이 필요한 주요 흐름: 데이터 **저장·수정·삭제**(장소/제보/수정요청 mutation), **로그인**(OAuth 콜백의 code 교환 성공/실패), **외부 API 호출**(Supabase DB·Storage·Auth admin API 등 네트워크 경계를 넘는 호출). 단순 화면 렌더나 순수 계산에는 남기지 않는다.
+- **서버에서 남긴다.** 클라이언트 콘솔 로그는 로그 수집기로 가지 않으므로 관측 대상이 될 수 없다. 관측이 필요한 이벤트는 **반드시 서버**(Server Action / route handler / 서버 컴포넌트)에서 `logger` 로 남긴다. 사용자 제보 insert 처럼 현재 브라우저에서 직접 Supabase 를 호출하는 흐름은, 관측이 필요해지면 Server Action 으로 옮겨 서버에서 로그를 남긴다. 클라이언트의 `console.error` 는 UI 디버깅용으로만 두고 관측 근거로 삼지 않는다.
+- **구조화해서 남긴다.** 각 로그는 다음을 필드로 갖는다: **시간**(`time`, 로거가 자동), **흐름**(`event`, 점 표기 예: `admin.place.create`, `auth.callback`), **추적값**(`request_id`, 행위 주체 `user_id` — 있을 때만), **결과**(`outcome: "ok" | "fail"` 등), 그리고 `duration_ms` 같은 부가 필드. 하나의 요청 흐름은 같은 `request_id` 로 이어붙인다(`newRequestId()`).
+- **레벨을 환경으로 거른다.** 최소 레벨은 `LOG_LEVEL`(있으면 우선), 없으면 `NODE_ENV === "production"` → `info`, 그 외 → `debug`. 즉 **운영에서 `debug` 는 출력되지 않는다.** 상세 추적은 `debug`, 정상 이벤트는 `info`, 복구 가능한 문제는 `warn`, 실패는 `error` 로 남긴다.
+- **민감정보는 남기지 않는다.** API 키·토큰·비밀번호·쿠키·service_role, 그리고 이메일/전화 **전체 값**은 로그에 넣지 않는다. 로거가 민감 키 이름과 문자열 속 이메일을 자동 마스킹하지만, 애초에 넘기지 않는 것이 원칙이다. 주체 식별은 이메일이 아니라 `user_id`(uuid)로 한다.
+
 ## Kakao Map key (required to see markers)
 
 The app needs `NEXT_PUBLIC_KAKAO_MAP_KEY` (Kakao JavaScript key) in `.env.local`. Copy `.env.local.example` → `.env.local` and fill it. The Kakao app must register `http://localhost:3030` under Platform > Web, or the SDK fails to load. Without a real key, `app/page.js` short-circuits to a "키가 필요합니다" notice screen instead of the map — this is expected, not a bug.

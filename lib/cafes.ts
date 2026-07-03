@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { logger } from "./logger";
 import type { Cafe, PlaceRow } from "./types";
 
 /**
@@ -47,6 +48,8 @@ export async function getCafes(): Promise<Cafe[]> {
     return [];
   }
 
+  const startedAt = Date.now();
+  // 외부 API 호출(Supabase DB): 공개 지도의 카페 목록 조회.
   const { data, error } = await supabase
     .from("places")
     .select(
@@ -55,10 +58,20 @@ export async function getCafes(): Promise<Cafe[]> {
     .order("name");
 
   if (error) {
-    // eslint-disable-next-line no-console
-    console.error("places 조회 실패:", error.message);
+    logger.error("places.list", {
+      outcome: "fail",
+      duration_ms: Date.now() - startedAt,
+      error: error.message,
+    });
     return [];
   }
 
-  return (data as PlaceRow[]).map(toCafe);
+  const cafes = (data as PlaceRow[]).map(toCafe);
+  // 정상 조회는 상세 추적용 debug — 운영(info 이상)에서는 출력되지 않는다.
+  logger.debug("places.list", {
+    outcome: "ok",
+    count: cafes.length,
+    duration_ms: Date.now() - startedAt,
+  });
+  return cafes;
 }

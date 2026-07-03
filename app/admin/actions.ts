@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "../../lib/admin";
 import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
 import { parsePlaceForm } from "../../lib/adminPlaces";
+import { logger, newRequestId } from "../../lib/logger";
 import {
   UPLOAD_BUCKET,
   UploadError,
@@ -31,12 +32,19 @@ export async function createPlaceAction(
   _prev: ActionResult | null,
   form: FormData
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const requestId = newRequestId();
 
   let payload;
   try {
     payload = parsePlaceForm(form);
   } catch (e) {
+    logger.warn("admin.place.create", {
+      request_id: requestId,
+      user_id: admin.id,
+      outcome: "fail",
+      reason: "invalid_form",
+    });
     return { ok: false, error: (e as Error).message };
   }
 
@@ -50,6 +58,13 @@ export async function createPlaceAction(
     .single();
 
   if (error) {
+    logger.error("admin.place.create", {
+      request_id: requestId,
+      user_id: admin.id,
+      outcome: "fail",
+      from_submission: Boolean(submissionId),
+      error: error.message,
+    });
     return { ok: false, error: `장소 추가 실패: ${error.message}` };
   }
 
@@ -62,6 +77,14 @@ export async function createPlaceAction(
       .update({ status: "approved" })
       .eq("id", submissionId);
     if (subErr) {
+      logger.error("admin.submission.approve", {
+        request_id: requestId,
+        user_id: admin.id,
+        submission_id: submissionId,
+        place_id: data.id,
+        outcome: "fail",
+        error: subErr.message,
+      });
       return {
         ok: false,
         error: `장소는 추가됐지만 제보 승인 처리에 실패했습니다(중복 승인 주의): ${subErr.message}`,
@@ -70,6 +93,14 @@ export async function createPlaceAction(
     // 제보 목록 캐시를 무효화해 돌아왔을 때 승인 상태가 반영되게 한다.
     revalidatePath("/admin/reports");
   }
+
+  logger.info("admin.place.create", {
+    request_id: requestId,
+    user_id: admin.id,
+    place_id: data.id,
+    from_submission: Boolean(submissionId),
+    outcome: "ok",
+  });
 
   revalidatePath("/admin/places");
   revalidatePath("/");
@@ -81,7 +112,8 @@ export async function updatePlaceAction(
   _prev: ActionResult | null,
   form: FormData
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const requestId = newRequestId();
 
   const id = (form.get("id") as string) || "";
   if (!id) return { ok: false, error: "장소 id 가 없습니다." };
@@ -90,6 +122,13 @@ export async function updatePlaceAction(
   try {
     payload = parsePlaceForm(form);
   } catch (e) {
+    logger.warn("admin.place.update", {
+      request_id: requestId,
+      user_id: admin.id,
+      place_id: id,
+      outcome: "fail",
+      reason: "invalid_form",
+    });
     return { ok: false, error: (e as Error).message };
   }
 
@@ -106,6 +145,14 @@ export async function updatePlaceAction(
     .maybeSingle();
 
   if (readErr) {
+    logger.error("admin.place.update", {
+      request_id: requestId,
+      user_id: admin.id,
+      place_id: id,
+      outcome: "fail",
+      step: "read_existing",
+      error: readErr.message,
+    });
     return { ok: false, error: `기존 장소 조회 실패: ${readErr.message}` };
   }
 
@@ -115,13 +162,22 @@ export async function updatePlaceAction(
     .eq("id", id);
 
   if (error) {
+    logger.error("admin.place.update", {
+      request_id: requestId,
+      user_id: admin.id,
+      place_id: id,
+      outcome: "fail",
+      step: "update",
+      error: error.message,
+    });
     return { ok: false, error: `장소 수정 실패: ${error.message}` };
   }
 
   await cleanupRemovedPhotos(
     supabase,
     (existing?.photos as string[] | null) ?? [],
-    payload.photos
+    payload.photos,
+    { requestId, adminId: admin.id, placeId: id }
   );
 
   if (editRequestId) {
@@ -130,6 +186,14 @@ export async function updatePlaceAction(
       .update({ status: "approved" })
       .eq("id", editRequestId);
     if (reqErr) {
+      logger.error("admin.edit_request.approve", {
+        request_id: requestId,
+        user_id: admin.id,
+        edit_request_id: editRequestId,
+        place_id: id,
+        outcome: "fail",
+        error: reqErr.message,
+      });
       return {
         ok: false,
         error: `장소는 수정됐지만 수정 요청 승인 처리에 실패했습니다: ${reqErr.message}`,
@@ -137,6 +201,14 @@ export async function updatePlaceAction(
     }
     revalidatePath("/admin/reports");
   }
+
+  logger.info("admin.place.update", {
+    request_id: requestId,
+    user_id: admin.id,
+    place_id: id,
+    from_edit_request: Boolean(editRequestId),
+    outcome: "ok",
+  });
 
   revalidatePath("/admin/places");
   // 방금 수정한 장소의 편집 페이지 캐시를 무효화한다.
@@ -164,16 +236,38 @@ function storagePathFromUrl(url: string): string | null {
 async function cleanupRemovedPhotos(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   oldPhotos: string[],
-  newPhotos: string[]
+  newPhotos: string[],
+  log: { requestId: string; adminId: string; placeId: string }
 ): Promise<void> {
   const kept = new Set(newPhotos);
   const removedPaths = oldPhotos
     .filter((u) => !kept.has(u))
     .map(storagePathFromUrl)
     .filter((p): p is string => p !== null);
-  if (removedPaths.length > 0) {
-    await supabase.storage.from(UPLOAD_BUCKET).remove(removedPaths);
+  if (removedPaths.length === 0) return;
+
+  // 외부 API 호출(Storage 삭제) — 저장소 객체를 지우는 부수효과라 결과를 남긴다.
+  const { error } = await supabase.storage
+    .from(UPLOAD_BUCKET)
+    .remove(removedPaths);
+  if (error) {
+    logger.error("admin.photos.cleanup", {
+      request_id: log.requestId,
+      user_id: log.adminId,
+      place_id: log.placeId,
+      removed_count: removedPaths.length,
+      outcome: "fail",
+      error: error.message,
+    });
+    return;
   }
+  logger.info("admin.photos.cleanup", {
+    request_id: log.requestId,
+    user_id: log.adminId,
+    place_id: log.placeId,
+    removed_count: removedPaths.length,
+    outcome: "ok",
+  });
 }
 
 export interface UploadResult {
@@ -186,13 +280,29 @@ export interface UploadResult {
 export async function rejectSubmissionAction(
   id: string
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const requestId = newRequestId();
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from("place_submissions")
     .update({ status: "rejected" })
     .eq("id", id);
-  if (error) return { ok: false, error: `반려 실패: ${error.message}` };
+  if (error) {
+    logger.error("admin.submission.reject", {
+      request_id: requestId,
+      user_id: admin.id,
+      submission_id: id,
+      outcome: "fail",
+      error: error.message,
+    });
+    return { ok: false, error: `반려 실패: ${error.message}` };
+  }
+  logger.info("admin.submission.reject", {
+    request_id: requestId,
+    user_id: admin.id,
+    submission_id: id,
+    outcome: "ok",
+  });
   revalidatePath("/admin/reports");
   return { ok: true };
 }
@@ -201,13 +311,29 @@ export async function rejectSubmissionAction(
 export async function rejectEditRequestAction(
   id: string
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const requestId = newRequestId();
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from("place_edit_requests")
     .update({ status: "rejected" })
     .eq("id", id);
-  if (error) return { ok: false, error: `반려 실패: ${error.message}` };
+  if (error) {
+    logger.error("admin.edit_request.reject", {
+      request_id: requestId,
+      user_id: admin.id,
+      edit_request_id: id,
+      outcome: "fail",
+      error: error.message,
+    });
+    return { ok: false, error: `반려 실패: ${error.message}` };
+  }
+  logger.info("admin.edit_request.reject", {
+    request_id: requestId,
+    user_id: admin.id,
+    edit_request_id: id,
+    outcome: "ok",
+  });
   revalidatePath("/admin/reports");
   return { ok: true };
 }
@@ -223,21 +349,39 @@ export async function rejectEditRequestAction(
 export async function uploadAdminPhotosAction(
   form: FormData
 ): Promise<UploadResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const requestId = newRequestId();
 
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   if (files.length === 0) return { ok: false, error: "선택된 파일이 없습니다." };
 
   const supabase = getSupabaseAdmin();
+  const startedAt = Date.now();
   try {
     validateFiles(files);
+    // 외부 API 호출(Storage 업로드) — 파일 수/소요시간을 결과와 함께 남긴다.
     const uploaded = await uploadFilesToPrefix(
       supabase,
       `places/${crypto.randomUUID()}`,
       files
     );
+    logger.info("admin.photos.upload", {
+      request_id: requestId,
+      user_id: admin.id,
+      file_count: files.length,
+      duration_ms: Date.now() - startedAt,
+      outcome: "ok",
+    });
     return { ok: true, urls: uploaded.map((u) => u.url) };
   } catch (e) {
+    logger.error("admin.photos.upload", {
+      request_id: requestId,
+      user_id: admin.id,
+      file_count: files.length,
+      duration_ms: Date.now() - startedAt,
+      outcome: "fail",
+      error: (e as Error).message,
+    });
     return {
       ok: false,
       error:

@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireAdmin } from "./admin";
 import { getSupabaseAdmin } from "./supabaseAdmin";
+import { logger } from "./logger";
 
 /**
  * 관리자 제보 조회 (service_role, RLS 우회).
@@ -53,7 +54,17 @@ async function emailMap(
   const supabase = getSupabaseAdmin();
   const results = await Promise.all(
     unique.map(async (id) => {
+      // 외부 API 호출(Supabase Auth admin): user_id → email.
       const { data, error } = await supabase.auth.admin.getUserById(id);
+      if (error) {
+        // 개별 조회 실패는 삼키되(표시는 계속) 관측 가능하게 남긴다.
+        // 이메일 자체는 로그에 넣지 않는다.
+        logger.warn("admin.user.email_lookup", {
+          user_id: id,
+          outcome: "fail",
+          error: error.message,
+        });
+      }
       return { id, email: error ? null : data.user?.email ?? null };
     })
   );
@@ -62,13 +73,20 @@ async function emailMap(
 }
 
 export async function listSubmissions(): Promise<SubmissionReport[]> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_submissions")
     .select("id,user_id,naver_place_url,memo,photos,status,created_at")
     .order("created_at", { ascending: false });
-  if (error) throw new Error(`제보 목록 조회 실패: ${error.message}`);
+  if (error) {
+    logger.error("admin.submissions.list", {
+      user_id: admin.id,
+      outcome: "fail",
+      error: error.message,
+    });
+    throw new Error(`제보 목록 조회 실패: ${error.message}`);
+  }
 
   const rows = data ?? [];
   const emails = await emailMap(rows.map((r) => r.user_id));
@@ -86,13 +104,20 @@ export async function listSubmissions(): Promise<SubmissionReport[]> {
 }
 
 export async function listEditRequests(): Promise<EditRequestReport[]> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("place_edit_requests")
     .select("id,user_id,place_id,memo,photos,status,created_at")
     .order("created_at", { ascending: false });
-  if (error) throw new Error(`수정 요청 목록 조회 실패: ${error.message}`);
+  if (error) {
+    logger.error("admin.edit_requests.list", {
+      user_id: admin.id,
+      outcome: "fail",
+      error: error.message,
+    });
+    throw new Error(`수정 요청 목록 조회 실패: ${error.message}`);
+  }
 
   const rows = data ?? [];
   const placeIds = Array.from(new Set(rows.map((r) => r.place_id)));
